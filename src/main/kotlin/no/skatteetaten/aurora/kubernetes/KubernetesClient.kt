@@ -6,8 +6,11 @@ import com.fkorotkov.kubernetes.apps.newDeployment
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
+import com.fkorotkov.kubernetes.metadata
+import com.fkorotkov.kubernetes.newPod
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.ServiceList
@@ -101,7 +104,15 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
             .retrieve()
             .bodyToMono<Kind>()
             .notFoundAsEmpty()
+    }
 
+    fun pods2(namespace:String, name:String) : Mono<Pod> {
+        return get(newPod {
+            metadata {
+                this.name=name
+                this.namespace=namespace
+            }
+        })
     }
 
 
@@ -184,9 +195,6 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
     }
 
     fun replicationController(namespace: String, name: String): Mono<ReplicationController> {
-        newDeployment {
-
-        }
         return webClient
             .get()
             .openShiftResource(REPLICATIONCONTROLLER, namespace, name)
@@ -265,7 +273,6 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
 }
 
 interface UserTokenFetcher {
-
     fun getUserToken() : String
 }
 

@@ -42,18 +42,17 @@ class WebclientKubernetesConfig(
     @Value("\${kubernetes.tokenLocation:file:/var/run/secrets/kubernetes.io/serviceaccount/token}") val token: Resource
 ) : BeanPostProcessor {
 
-
     @Bean
     fun kubernetesClient(
         @Qualifier("kubernetes") webClient: WebClient,
         userTokenFetcher: UserTokenFetcher
     ) = KubernetesClient(webClient, userTokenFetcher)
 
-    @Qualifier("kubernetest")
+    @Qualifier("kubernetes")
     @Bean
     fun webClient(
         builder: WebClient.Builder,
-        @Qualifier("openshift") tcpClient: TcpClient
+        @Qualifier("kubernetes") tcpClient: TcpClient
     ): WebClient {
         logger.debug("OpenshiftUrl=$kubernetesUrl")
         val b = builder
