@@ -2,7 +2,6 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fkorotkov.kubernetes.apps.newDeployment
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
@@ -39,17 +38,16 @@ import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
-import java.lang.Exception
 
 private val logger = KotlinLogging.logger {}
 
-abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: String? = null) {
+abstract class AbstractKubernetesClient(val webClient: WebClient, val token: String? = null) {
 
-    fun scale(ns: String, n: String, count: Int): Mono<JsonNode> {
-
+    suspend fun scale(ns: String, n: String, count: Int): JsonNode {
         val scale = newScale {
             metadata {
                 namespace = ns
@@ -61,16 +59,17 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
         }
         val uri = OpenShiftApiGroup.DEPLOYMENTCONFIGSCALE.uri(ns, n)
         logger.debug("URL=${uri.expand()} body=${jacksonObjectMapper().writeValueAsString(scale)}")
+
         return webClient
             .put()
             .uri(uri.template, uri.variables)
             .body(BodyInserters.fromValue(scale))
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun deploy(namespace: String, name: String): Mono<JsonNode> {
+    suspend fun deploy(namespace: String, name: String): JsonNode {
         val uri = OpenShiftApiGroup.DEPLOYMENTREQUEST.uri(namespace, name)
         return webClient
             .post()
@@ -88,12 +87,12 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
             )
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    inline fun <reified Kind : HasMetadata> get(resource:Kind) : Mono<Kind> {
+    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
         val variables = mapOf(
-            "namespace" to  resource.metadata.namespace,
+            "namespace" to resource.metadata.namespace,
             "kind" to "${resource.kind.toLowerCase()}s",
             "name" to resource.metadata.name
         )
@@ -102,135 +101,133 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
             .uri("/${resource.apiVersion}/{kind}/namespace/{namespace}/{name}", variables)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono<Kind>()
-            .notFoundAsEmpty()
+            .awaitBody<Kind>()
     }
 
-    fun pods2(namespace:String, name:String) : Mono<Pod> {
+    suspend fun pods2(namespace: String, name: String): Pod {
         return get(newPod {
             metadata {
-                this.name=name
-                this.namespace=namespace
+                this.name = name
+                this.namespace = namespace
             }
         })
     }
 
+    suspend inline fun <reified T : HasMetadata> get(namespace: String, name: String): T {
+        val apiGroup: ApiGroup = try {
+            KubernetesApiGroup.valueOf(T::class.java.simpleName)
+        } catch (e: Exception) {
+            OpenShiftApiGroup.valueOf(T::class.java.simpleName)
+        }
 
-    inline fun <reified T : HasMetadata> get(namespace:String, name:String): Mono<T> {
-
-         val apiGroup :ApiGroup= try {
-             KubernetesApiGroup.valueOf(T::class.java.simpleName)
-         }  catch(e:Exception) {
-             OpenShiftApiGroup.valueOf(T::class.java.simpleName)
-         }
         return webClient
             .get()
             .openShiftResource(apiGroup, namespace, name)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono<T>()
+            .awaitBody()
     }
 
-    fun deploymentConfig(namespace: String, name: String): Mono<DeploymentConfig> {
+    suspend fun deploymentConfig(namespace: String, name: String): DeploymentConfig {
         return webClient
             .get()
             .openShiftResource(DEPLOYMENTCONFIG, namespace, name)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun applicationDeployment(namespace: String, name: String): Mono<ApplicationDeployment> {
+    suspend fun applicationDeployment(namespace: String, name: String): ApplicationDeployment {
         return webClient
             .get()
             .openShiftResource(APPLICATIONDEPLOYMENT, namespace, name)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun applicationDeployments(namespace: String): Mono<ApplicationDeploymentList> {
+    suspend fun applicationDeployments(namespace: String): ApplicationDeploymentList {
         return webClient
             .get()
             .openShiftResource(APPLICATIONDEPLOYMENT, namespace)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun route(namespace: String, name: String): Mono<Route> {
+    suspend fun route(namespace: String, name: String): Route {
         return webClient
             .get()
             .openShiftResource(ROUTE, namespace, name)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun routes(namespace: String, labelMap: Map<String, String>): Mono<RouteList> {
+    suspend fun routes(namespace: String, labelMap: Map<String, String> = emptyMap()): RouteList {
         return webClient
             .get()
             .openShiftResource(apiGroup = ROUTE, namespace = namespace, labels = labelMap)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun services(namespace: String?, labelMap: Map<String, String>): Mono<ServiceList> {
+    suspend fun services(namespace: String?, labelMap: Map<String, String> = emptyMap()): ServiceList {
         return webClient
             .get()
             .openShiftResource(apiGroup = SERVICE, namespace = namespace, labels = labelMap)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun pods(namespace: String, labelMap: Map<String, String>): Mono<PodList> {
+    suspend fun pods(namespace: String, labelMap: Map<String, String> = emptyMap()): PodList {
         return webClient
             .get()
             .openShiftResource(apiGroup = POD, namespace = namespace, labels = labelMap)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun replicationController(namespace: String, name: String): Mono<ReplicationController> {
+    suspend fun replicationController(namespace: String, name: String): ReplicationController {
         return webClient
             .get()
             .openShiftResource(REPLICATIONCONTROLLER, namespace, name)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun imageStreamTag(namespace: String, name: String, tag: String): Mono<ImageStreamTag> {
+    suspend fun imageStreamTag(namespace: String, name: String, tag: String): ImageStreamTag {
         return webClient
             .get()
             .openShiftResource(IMAGESTREAMTAG, namespace, "$name:$tag")
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun project(name: String): Mono<Project> {
+    suspend fun project(namespace: String): Project {
         return webClient
             .get()
-            .openShiftResource(apiGroup = PROJECT, name = name)
+            .openShiftResource(apiGroup = PROJECT, name = namespace)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun projects(): Mono<ProjectList> {
+    suspend fun projects(): ProjectList {
         return webClient
             .get()
             .openShiftResource(PROJECT)
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun selfSubjectAccessView(review: SelfSubjectAccessReview): Mono<SelfSubjectAccessReview> {
+    suspend fun selfSubjectAccessView(review: SelfSubjectAccessReview): SelfSubjectAccessReview {
         val uri = SELFSUBJECTACCESSREVIEW.uri()
         return webClient
             .post()
@@ -238,16 +235,16 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
             .body(BodyInserters.fromValue(review))
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
-    fun user(): Mono<User> {
+    suspend fun user(): User {
         return webClient
             .get()
             .uri(USER.uri().expand())
             .bearerToken(token)
             .retrieve()
-            .bodyToMono()
+            .awaitBody()
     }
 
     fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
@@ -273,11 +270,11 @@ abstract class AbstractOpenShiftClient(val webClient: WebClient, val token: Stri
 }
 
 interface UserTokenFetcher {
-    fun getUserToken() : String
+    fun getUserToken(): String
 }
 
-class KubernetesServiceAccountClient(webClient: WebClient) : AbstractOpenShiftClient(webClient)
-class KubernetesUserTokenClient(token: String, webClient: WebClient) : AbstractOpenShiftClient(webClient, token)
+class KubernetesServiceAccountClient(webClient: WebClient) : AbstractKubernetesClient(webClient)
+class KubernetesUserTokenClient(token: String, webClient: WebClient) : AbstractKubernetesClient(webClient, token)
 
 class KubernetesClient(
     private val webClient: WebClient,
@@ -346,4 +343,3 @@ fun <T : HasMetadata?> Mono<out KubernetesResourceList<T>>.blockForList(
     retryFirstInMs: Long = defaultFirstRetryInMs,
     retryMaxInMs: Long = defaultMaxRetryInMs
 ): List<T> = this.blockForResource(retryFirstInMs, retryMaxInMs)?.items ?: emptyList()
-

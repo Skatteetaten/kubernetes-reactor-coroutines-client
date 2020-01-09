@@ -5,37 +5,38 @@ import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.beans.factory.config.BeanPostProcessor
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
+import org.springframework.context.annotation.Profile
+import org.springframework.core.io.Resource
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.util.StreamUtils
+import org.springframework.web.reactive.function.client.ExchangeStrategies
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
+import reactor.netty.http.client.HttpClient
+import reactor.netty.tcp.SslProvider
+import reactor.netty.tcp.TcpClient
 import java.io.FileInputStream
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.TrustManagerFactory
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.beans.factory.config.BeanPostProcessor
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
-import org.springframework.core.io.Resource
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
-import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.scheduling.annotation.EnableAsync
-import org.springframework.util.StreamUtils
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
-import reactor.netty.http.client.HttpClient
-import reactor.netty.tcp.SslProvider
-import reactor.netty.tcp.TcpClient
-import java.io.IOException
 
 const val HEADER_KLIENTID = "KlientID"
 
-private val logger = KotlinLogging.logger{}
+private val logger = KotlinLogging.logger {}
+
 @Configuration
-@EnableAsync
 class WebclientKubernetesConfig(
     @Value("\${spring.application.name}") val applicationName: String,
     @Value("\${kubernetes.url}") val kubernetesUrl: String,
@@ -44,21 +45,28 @@ class WebclientKubernetesConfig(
 
     @Bean
     fun kubernetesClient(
-        @Qualifier("kubernetes") webClient: WebClient,
+        webClient: WebClient,
         userTokenFetcher: UserTokenFetcher
     ) = KubernetesClient(webClient, userTokenFetcher)
 
-    @Qualifier("kubernetes")
     @Bean
     fun webClient(
         builder: WebClient.Builder,
-        @Qualifier("kubernetes") tcpClient: TcpClient
+        tcpClient: TcpClient
     ): WebClient {
         logger.debug("OpenshiftUrl=$kubernetesUrl")
         val b = builder
             .baseUrl(kubernetesUrl)
             .defaultHeaders(applicationName)
             .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
+            .exchangeStrategies(
+                ExchangeStrategies.builder()
+                    .codecs {
+                        it.defaultCodecs().apply {
+                            maxInMemorySize(-1) // unlimited
+                        }
+                    }.build()
+            )
 
         try {
             b.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer ${token.readContent()}")
@@ -70,9 +78,8 @@ class WebclientKubernetesConfig(
     }
 
     @Bean
-    @Qualifier("kubernetes")
     fun websocketClient(
-        @Qualifier("kubernetes") tcpClient: TcpClient,
+        tcpClient: TcpClient,
         @Value("\${kubernetes.url}") openshiftUrl: String,
         @Value("\${kubernetes.tokenLocation:file:/var/run/secrets/kubernetes.io/serviceaccount/token}") token: Resource
     ): ReactorNettyWebSocketClient {
@@ -87,7 +94,6 @@ class WebclientKubernetesConfig(
     }
 
     @Bean
-    @Qualifier("kubernetes")
     fun openshiftTcpClientWrapper(
         @Value("\${kubernetes.readTimeout:5000}") readTimeout: Long,
         @Value("\${kubernetes.writeTimeout:5000}") writeTimeout: Long,
@@ -124,8 +130,9 @@ class WebclientKubernetesConfig(
     @Profile("local")
     fun localKeyStore(): KeyStore? = null
 
-    @Profile("kubernetes")
     @Bean
+    @Primary
+    @Profile("kubernetes")
     fun openshiftSSLContext(@Value("\${trust.store}") trustStoreLocation: String): KeyStore =
         KeyStore.getInstance(KeyStore.getDefaultType())?.let { ks ->
             ks.load(FileInputStream(trustStoreLocation), "changeit".toCharArray())
@@ -140,6 +147,5 @@ class WebclientKubernetesConfig(
 private fun WebClient.Builder.defaultHeaders(applicationName: String) = this
     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
     .defaultHeader("User-Agent", applicationName)
-
 
 fun Resource.readContent() = StreamUtils.copyToString(this.inputStream, StandardCharsets.UTF_8)

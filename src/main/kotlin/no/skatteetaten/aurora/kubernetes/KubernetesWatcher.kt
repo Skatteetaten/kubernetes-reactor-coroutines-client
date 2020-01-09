@@ -46,7 +46,7 @@ class KubernetesWatcher(
     val closeableWatcher: CloseableWatcher
 ) {
 
-    //TODO: convert this to non blocking
+    // TODO: convert this to non blocking
     fun watch(url: String, types: List<String> = emptyList(), fn: (JsonNode) -> Mono<Void>) {
         var stopped = false
         while (!stopped) {
