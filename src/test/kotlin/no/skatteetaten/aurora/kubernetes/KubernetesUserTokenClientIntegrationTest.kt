@@ -63,4 +63,31 @@ class KubernetesUserTokenClientIntegrationTest {
             assertThat(pods).isNotNull()
         }
     }
+
+    @Test
+    fun `Get replication controllers`() {
+        runBlocking {
+            val rcs = kubernetesClient.replicationControllers(NAMESPACE)
+            val rc = kubernetesClient.replicationController(NAMESPACE, rcs.items.first().metadata.name)
+
+            assertThat(rcs).isNotNull()
+            assertThat(rc).isNotNull()
+        }
+    }
+
+    @Test
+    fun `Get image stream tag`() {
+        runBlocking {
+            val ist = kubernetesClient.imageStreamTag(NAMESPACE, NAME, "latest")
+            assertThat(ist).isNotNull()
+        }
+    }
+
+    @Test
+    fun `Get user`() {
+        runBlocking {
+            val u = kubernetesClient.user()
+            assertThat(u).isNotNull()
+        }
+    }
 }
