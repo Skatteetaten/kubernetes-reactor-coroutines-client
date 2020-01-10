@@ -4,23 +4,11 @@ import assertk.assertThat
 import assertk.assertions.isNotNull
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
-import org.springframework.web.reactive.function.client.ExchangeStrategies
-import org.springframework.web.reactive.function.client.WebClient
-
-const val NAMESPACE = "aurora"
-const val NAME = "boober"
 
 @EnabledIfOpenShiftToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val webClient = WebClient.builder().baseUrl("https://utv-master.paas.skead.no:8443").exchangeStrategies(
-        ExchangeStrategies.builder()
-            .codecs {
-                it.defaultCodecs().apply {
-                    maxInMemorySize(-1) // unlimited
-                }
-            }.build())
-    private val kubernetesClient = KubernetesUserTokenClient(openshiftToken(), webClient)
+    private val kubernetesClient = KubernetesUserTokenClient(openshiftToken(), testWebClient())
 
     @Test
     fun `Get projects`() {

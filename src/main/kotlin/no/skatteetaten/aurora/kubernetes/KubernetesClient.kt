@@ -8,7 +8,6 @@ import com.fkorotkov.kubernetes.extensions.spec
 import com.fkorotkov.kubernetes.metadata
 import com.fkorotkov.kubernetes.newPod
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.ReplicationController
@@ -21,8 +20,6 @@ import io.fabric8.openshift.api.model.ProjectList
 import io.fabric8.openshift.api.model.Route
 import io.fabric8.openshift.api.model.RouteList
 import io.fabric8.openshift.api.model.User
-import java.net.URI
-import java.time.Duration
 import mu.KotlinLogging
 import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.POD
 import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.REPLICATIONCONTROLLER
@@ -37,11 +34,7 @@ import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.USER
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBody
-import org.springframework.web.reactive.function.client.bodyToMono
-import reactor.core.publisher.Mono
-import reactor.retry.Retry
 
 private val logger = KotlinLogging.logger {}
 
@@ -287,59 +280,3 @@ class KubernetesClient(
 
     private fun getUserToken() = userTokenFetcher.getUserToken()
 }
-
-fun <T> Mono<T>.retryWithLog(retryFirstInMs: Long, retryMaxInMs: Long) =
-    this.retryWhen(Retry.onlyIf<Mono<T>> {
-        if (it.iteration() == 3L) {
-            logger.info {
-                val e = it.exception()
-                val msg = "Retrying failed request, ${e.message}"
-                if (e is WebClientResponseException) {
-                    "$msg, ${e.request?.method} ${e.request?.uri}"
-                } else {
-                    msg
-                }
-            }
-        }
-
-        it.exception() !is WebClientResponseException.Unauthorized
-    }.exponentialBackoff(Duration.ofMillis(retryFirstInMs), Duration.ofMillis(retryMaxInMs)).retryMax(3))
-
-data class RequestedOpenShiftResource(val namespace: String?, val kind: String?, val name: String?)
-
-fun URI.requestedOpenShiftResource() =
-    "/namespaces/(.+)/(.+)/(.+)".toRegex()
-        .find(this.path)
-        ?.groupValues
-        ?.takeIf { it.size == 4 }
-        ?.let {
-            RequestedOpenShiftResource(it[1], it[2], it[3])
-        }
-
-fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
-    when (it) {
-        is WebClientResponseException.NotFound -> {
-            val resource = it.request?.uri?.requestedOpenShiftResource()
-            logger.info {
-                "Resource not found, method=${it.request?.method} uri=${it.request?.uri} " +
-                    "namespace=${resource?.namespace} kind=${resource?.kind} name=${resource?.name}"
-            }
-            Mono.empty()
-        }
-        else -> Mono.error(it)
-    }
-}
-
-private const val defaultFirstRetryInMs: Long = 100
-private const val defaultMaxRetryInMs: Long = 2000
-
-fun <T> Mono<T>.blockForResource(
-    retryFirstInMs: Long = defaultFirstRetryInMs,
-    retryMaxInMs: Long = defaultMaxRetryInMs
-) =
-    this.notFoundAsEmpty().retryWithLog(retryFirstInMs, retryMaxInMs).block()
-
-fun <T : HasMetadata?> Mono<out KubernetesResourceList<T>>.blockForList(
-    retryFirstInMs: Long = defaultFirstRetryInMs,
-    retryMaxInMs: Long = defaultMaxRetryInMs
-): List<T> = this.blockForResource(retryFirstInMs, retryMaxInMs)?.items ?: emptyList()
