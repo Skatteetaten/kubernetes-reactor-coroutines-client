@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 @EnabledIfOpenShiftToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesUserTokenClient(openshiftToken(), testWebClient())
+    private val kubernetesClient = KubernetesUserTokenClient(openShiftToken(), testWebClient())
 
     @Test
     fun `Get projects`() {

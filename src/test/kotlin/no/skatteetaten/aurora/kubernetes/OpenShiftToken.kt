@@ -14,7 +14,7 @@ const val OPENSHIFT_URL = "https://utv-master.paas.skead.no:8443"
 const val NAMESPACE = "aurora"
 const val NAME = "boober"
 
-fun openshiftToken(environment: String = "utv-master"): String {
+fun openShiftToken(environment: String = "utv-master"): String {
     val content = File("${System.getProperty("user.home")}/.kube/config").readText()
     val values = ObjectMapper(YAMLFactory()).readTree(content)
     return values.at("/users").iterator().asSequence()
@@ -41,7 +41,7 @@ class EnabledIfOpenShiftTokenCondition : ExecutionCondition {
 
     override fun evaluateExecutionCondition(context: ExtensionContext?): ConditionEvaluationResult {
         return try {
-            openshiftToken()
+            openShiftToken()
             ConditionEvaluationResult.enabled("OpenShift token found")
         } catch (ignored: IllegalArgumentException) {
             ConditionEvaluationResult.disabled("No OpenShift token")
