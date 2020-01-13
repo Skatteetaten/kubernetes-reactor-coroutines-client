@@ -7,6 +7,8 @@ import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
 import com.fkorotkov.kubernetes.metadata
 import com.fkorotkov.kubernetes.newPod
+import com.fkorotkov.openshift.metadata
+import com.fkorotkov.openshift.newDeploymentConfig
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
@@ -27,7 +29,6 @@ import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.REPLICATIONCONTROLLE
 import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.SELFSUBJECTACCESSREVIEW
 import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.SERVICE
 import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.APPLICATIONDEPLOYMENT
-import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.DEPLOYMENTCONFIG
 import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.IMAGESTREAMTAG
 import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.PROJECT
 import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.ROUTE
@@ -92,10 +93,10 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
         )
         return webClient
             .get()
-            .uri("/${resource.apiVersion}/{kind}/namespace/{namespace}/{name}", variables)
+            .uri("/apis/${resource.apiVersion}/namespaces/{namespace}/{kind}/{name}", variables)
             .bearerToken(token)
             .retrieve()
-            .awaitBody<Kind>()
+            .awaitBody()
     }
 
     suspend fun pods2(namespace: String, name: String): Pod {
@@ -123,12 +124,14 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     suspend fun deploymentConfig(namespace: String, name: String): DeploymentConfig {
-        return webClient
-            .get()
-            .openShiftResource(DEPLOYMENTCONFIG, namespace, name)
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
+        val dc = newDeploymentConfig {
+            metadata {
+                this.name = name
+                this.namespace = namespace
+            }
+        }
+
+        return get(dc)
     }
 
     suspend fun applicationDeployment(namespace: String, name: String): ApplicationDeployment {
