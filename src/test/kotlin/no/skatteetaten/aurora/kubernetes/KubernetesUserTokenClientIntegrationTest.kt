@@ -44,7 +44,10 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get application deployments`() {
         runBlocking {
             val applicationDeployments = kubernetesClient.applicationDeployments(NAMESPACE)
+            val ad = kubernetesClient.applicationDeployment(NAMESPACE, NAME)
+
             assertThat(applicationDeployments).isNotNull()
+            assertThat(ad).isNotNull()
         }
     }
 
@@ -60,7 +63,10 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get pods`() {
         runBlocking {
             val pods = kubernetesClient.pods(NAMESPACE)
+            val pods2 = kubernetesClient.pods2(NAMESPACE, pods.items.first().metadata.name)
+
             assertThat(pods).isNotNull()
+            assertThat(pods2).isNotNull()
         }
     }
 

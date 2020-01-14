@@ -23,14 +23,15 @@ fun kubernetesToken(environment: String = "utv-master"): String {
         ?: throw IllegalArgumentException("No Kubernetes token found for environment $environment")
 }
 
-fun testWebClient() = WebClient.builder().baseUrl(KUBERNETES_URL).exchangeStrategies(
-    ExchangeStrategies.builder()
-        .codecs {
-            it.defaultCodecs().apply {
-                maxInMemorySize(-1) // unlimited
-            }
-        }.build()
-).build()
+fun testWebClient() = WebClient.builder().baseUrl(KUBERNETES_URL)
+    .exchangeStrategies(
+        ExchangeStrategies.builder()
+            .codecs {
+                it.defaultCodecs().apply {
+                    maxInMemorySize(-1) // unlimited
+                }
+            }.build()
+    ).build()
 
 @Target(AnnotationTarget.CLASS)
 @Retention
