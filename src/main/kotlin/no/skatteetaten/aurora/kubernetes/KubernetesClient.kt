@@ -2,15 +2,18 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
 import com.fkorotkov.kubernetes.metadata
 import com.fkorotkov.kubernetes.newObjectMeta
 import com.fkorotkov.kubernetes.newPod
+import com.fkorotkov.kubernetes.newReplicationController
 import com.fkorotkov.kubernetes.newService
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
+import com.fkorotkov.openshift.newImageStreamTag
 import com.fkorotkov.openshift.newProject
 import com.fkorotkov.openshift.newRoute
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -30,10 +33,7 @@ import io.fabric8.openshift.api.model.Route
 import io.fabric8.openshift.api.model.RouteList
 import io.fabric8.openshift.api.model.User
 import mu.KotlinLogging
-import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.REPLICATIONCONTROLLER
 import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.SELFSUBJECTACCESSREVIEW
-import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.IMAGESTREAMTAG
-import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.PROJECT
 import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.USER
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -120,7 +120,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
 
     suspend fun route(namespace: String, name: String): Route {
         val r = newRoute {
-            metadata = newObjectMeta {
+            metadata {
                 this.namespace = namespace
                 this.name = name
             }
@@ -139,7 +139,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
 
     suspend fun services(namespace: String?, labels: Map<String, String> = emptyMap()): ServiceList {
         val s = newService {
-            metadata = newObjectMeta {
+            metadata {
                 this.namespace = namespace
             }
         }
@@ -158,53 +158,54 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     suspend fun replicationControllers(namespace: String): ReplicationControllerList {
-        return webClient
-            .get()
-            .kubernetesResource(apiGroup = REPLICATIONCONTROLLER, namespace = namespace)
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
-    }
-
-    suspend fun replicationController(namespace: String, rcName: String): ReplicationController {
-        return webClient
-            .get()
-            .kubernetesResource(REPLICATIONCONTROLLER, namespace, rcName)
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
-    }
-
-    suspend fun imageStreamTag(namespace: String, name: String, tag: String): ImageStreamTag {
-        return webClient
-            .get()
-            .kubernetesResource(IMAGESTREAMTAG, namespace, "$name:$tag")
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
-    }
-
-    suspend fun project(namespace: String): Project {
-        return webClient
-            .get()
-            .kubernetesResource(apiGroup = PROJECT, name = namespace)
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
-    }
-
-    suspend fun projects(): ProjectList {
-        val project = newProject {
+        val rc = newReplicationController {
             metadata {
-                this.name = name
                 this.namespace = namespace
             }
         }
 
-        return webClient.get().kubernetesResources(project)
+        return webClient.get().kubernetesResources(rc)
+    }
+
+    suspend fun replicationController(namespace: String, name: String): ReplicationController {
+        val rc = newReplicationController {
+            metadata {
+                this.namespace = namespace
+                this.name = name
+            }
+        }
+
+        return webClient.get().kubernetesResource(rc)
+    }
+
+    suspend fun imageStreamTag(namespace: String, name: String, tag: String): ImageStreamTag {
+        val ist = newImageStreamTag {
+            metadata {
+                this.namespace = namespace
+                this.name = "$name:$tag"
+            }
+        }
+
+        return webClient.get().kubernetesResource(ist)
+    }
+
+    suspend fun project(name: String): Project {
+        val p = newProject {
+            metadata {
+                this.name = name
+            }
+        }
+
+        return webClient.get().kubernetesResource(p)
+    }
+
+    suspend fun projects(): ProjectList {
+        return webClient.get().kubernetesResources(newProject { metadata {} })
     }
 
     suspend fun selfSubjectAccessView(review: SelfSubjectAccessReview): SelfSubjectAccessReview {
+        newSelfSubjectAccessReview {
+        }
         val uri = SELFSUBJECTACCESSREVIEW.uri()
         return webClient
             .post()
