@@ -5,10 +5,10 @@ import assertk.assertions.isNotNull
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
-@EnabledIfOpenShiftToken
+@EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesUserTokenClient(openShiftToken(), testWebClient())
+    private val kubernetesClient = KubernetesUserTokenClient(kubernetesToken(), testWebClient())
 
     @Test
     fun `Get projects`() {

@@ -9,7 +9,9 @@ import com.fkorotkov.kubernetes.metadata
 import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
+import com.fkorotkov.openshift.newProject
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.ReplicationController
@@ -85,6 +87,38 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
             .awaitBody()
     }
 
+    private suspend inline fun <reified Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
+        resource: Kind
+    ): Kind {
+        val variables = mapOf(
+            "namespace" to resource.metadata.namespace,
+            "kind" to "${resource.kind.toLowerCase()}s",
+            "name" to resource.metadata.name
+        )
+
+        return this.uri("/apis/${resource.apiVersion}/namespaces/{namespace}/{kind}/{name}", variables)
+            .bearerToken(token)
+            .retrieve()
+            .awaitBody()
+    }
+
+    private suspend inline fun <reified Kind : HasMetadata, reified KindList : KubernetesResourceList<Kind>>
+        WebClient.RequestHeadersUriSpec<*>.kubernetesResources(resource: Kind): KindList {
+        val variables = mapOf(
+            "namespace" to resource.metadata.namespace,
+            "kind" to "${resource.kind.toLowerCase()}s",
+            "name" to resource.metadata.name
+        )
+
+        val template = variables["namespace"]?.let {
+            "/apis/${resource.apiVersion}/namespaces/{namespace}/{kind}/{name}"
+        } ?: "/apis/${resource.apiVersion}/{kind}/{name}"
+        return this.uri(template, variables)
+            .bearerToken(token)
+            .retrieve()
+            .awaitBody()
+    }
+
     suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
         val variables = mapOf(
             "namespace" to resource.metadata.namespace,
@@ -117,7 +151,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
 
         return webClient
             .get()
-            .openShiftResource(apiGroup, namespace, name)
+            .kubernetesResource(apiGroup, namespace, name)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -131,13 +165,13 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
             }
         }
 
-        return get(dc)
+        return webClient.get().kubernetesResource(dc)
     }
 
     suspend fun applicationDeployment(namespace: String, name: String): ApplicationDeployment {
         return webClient
             .get()
-            .openShiftResource(APPLICATIONDEPLOYMENT, namespace, name)
+            .kubernetesResource(APPLICATIONDEPLOYMENT, namespace, name)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -146,7 +180,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun applicationDeployments(namespace: String): ApplicationDeploymentList {
         return webClient
             .get()
-            .openShiftResource(APPLICATIONDEPLOYMENT, namespace)
+            .kubernetesResource(APPLICATIONDEPLOYMENT, namespace)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -155,7 +189,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun route(namespace: String, name: String): Route {
         return webClient
             .get()
-            .openShiftResource(ROUTE, namespace, name)
+            .kubernetesResource(ROUTE, namespace, name)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -164,7 +198,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun routes(namespace: String, labelMap: Map<String, String> = emptyMap()): RouteList {
         return webClient
             .get()
-            .openShiftResource(apiGroup = ROUTE, namespace = namespace, labels = labelMap)
+            .kubernetesResource(apiGroup = ROUTE, namespace = namespace, labels = labelMap)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -173,7 +207,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun services(namespace: String?, labelMap: Map<String, String> = emptyMap()): ServiceList {
         return webClient
             .get()
-            .openShiftResource(apiGroup = SERVICE, namespace = namespace, labels = labelMap)
+            .kubernetesResource(apiGroup = SERVICE, namespace = namespace, labels = labelMap)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -182,7 +216,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun pods(namespace: String, labelMap: Map<String, String> = emptyMap()): PodList {
         return webClient
             .get()
-            .openShiftResource(apiGroup = POD, namespace = namespace, labels = labelMap)
+            .kubernetesResource(apiGroup = POD, namespace = namespace, labels = labelMap)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -191,7 +225,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun replicationControllers(namespace: String): ReplicationControllerList {
         return webClient
             .get()
-            .openShiftResource(apiGroup = REPLICATIONCONTROLLER, namespace = namespace)
+            .kubernetesResource(apiGroup = REPLICATIONCONTROLLER, namespace = namespace)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -200,7 +234,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun replicationController(namespace: String, rcName: String): ReplicationController {
         return webClient
             .get()
-            .openShiftResource(REPLICATIONCONTROLLER, namespace, rcName)
+            .kubernetesResource(REPLICATIONCONTROLLER, namespace, rcName)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -209,7 +243,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun imageStreamTag(namespace: String, name: String, tag: String): ImageStreamTag {
         return webClient
             .get()
-            .openShiftResource(IMAGESTREAMTAG, namespace, "$name:$tag")
+            .kubernetesResource(IMAGESTREAMTAG, namespace, "$name:$tag")
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -218,19 +252,21 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     suspend fun project(namespace: String): Project {
         return webClient
             .get()
-            .openShiftResource(apiGroup = PROJECT, name = namespace)
+            .kubernetesResource(apiGroup = PROJECT, name = namespace)
             .bearerToken(token)
             .retrieve()
             .awaitBody()
     }
 
     suspend fun projects(): ProjectList {
-        return webClient
-            .get()
-            .openShiftResource(PROJECT)
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
+        val project = newProject {
+            metadata {
+                this.name = name
+                this.namespace = namespace
+            }
+        }
+
+        return webClient.get().kubernetesResources(project)
     }
 
     suspend fun selfSubjectAccessView(review: SelfSubjectAccessReview): SelfSubjectAccessReview {
@@ -258,7 +294,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
             this.header(HttpHeaders.AUTHORIZATION, "Bearer $token")
         } ?: this
 
-    fun WebClient.RequestHeadersUriSpec<*>.openShiftResource(
+    fun WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
         apiGroup: ApiGroup,
         namespace: String? = null,
         name: String? = null,

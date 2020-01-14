@@ -10,20 +10,20 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 
-const val OPENSHIFT_URL = "https://utv-master.paas.skead.no:8443"
+const val KUBERNETES_URL = "https://utv-master.paas.skead.no:8443"
 const val NAMESPACE = "aurora"
 const val NAME = "boober"
 
-fun openShiftToken(environment: String = "utv-master"): String {
+fun kubernetesToken(environment: String = "utv-master"): String {
     val content = File("${System.getProperty("user.home")}/.kube/config").readText()
     val values = ObjectMapper(YAMLFactory()).readTree(content)
     return values.at("/users").iterator().asSequence()
         .firstOrNull { it.at("/name").textValue().contains("$environment-paas-skead-no") }
         ?.at("/user/token")?.textValue()
-        ?: throw IllegalArgumentException("No openshift token found for environment $environment")
+        ?: throw IllegalArgumentException("No Kubernetes token found for environment $environment")
 }
 
-fun testWebClient() = WebClient.builder().baseUrl(OPENSHIFT_URL).exchangeStrategies(
+fun testWebClient() = WebClient.builder().baseUrl(KUBERNETES_URL).exchangeStrategies(
     ExchangeStrategies.builder()
         .codecs {
             it.defaultCodecs().apply {
@@ -34,17 +34,17 @@ fun testWebClient() = WebClient.builder().baseUrl(OPENSHIFT_URL).exchangeStrateg
 
 @Target(AnnotationTarget.CLASS)
 @Retention
-@ExtendWith(EnabledIfOpenShiftTokenCondition::class)
-annotation class EnabledIfOpenShiftToken
+@ExtendWith(EnabledIfKubernetesTokenCondition::class)
+annotation class EnabledIfKubernetesToken
 
-class EnabledIfOpenShiftTokenCondition : ExecutionCondition {
+class EnabledIfKubernetesTokenCondition : ExecutionCondition {
 
     override fun evaluateExecutionCondition(context: ExtensionContext?): ConditionEvaluationResult {
         return try {
-            openShiftToken()
-            ConditionEvaluationResult.enabled("OpenShift token found")
+            kubernetesToken()
+            ConditionEvaluationResult.enabled("Kubernetes token found")
         } catch (ignored: IllegalArgumentException) {
-            ConditionEvaluationResult.disabled("No OpenShift token")
+            ConditionEvaluationResult.disabled("No Kubernetes token")
         }
     }
 }
