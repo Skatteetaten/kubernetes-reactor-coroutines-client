@@ -2,7 +2,6 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
@@ -33,7 +32,6 @@ import io.fabric8.openshift.api.model.Route
 import io.fabric8.openshift.api.model.RouteList
 import io.fabric8.openshift.api.model.User
 import mu.KotlinLogging
-import no.skatteetaten.aurora.kubernetes.KubernetesApiGroup.SELFSUBJECTACCESSREVIEW
 import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.USER
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -204,16 +202,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     suspend fun selfSubjectAccessView(review: SelfSubjectAccessReview): SelfSubjectAccessReview {
-        newSelfSubjectAccessReview {
-        }
-        val uri = SELFSUBJECTACCESSREVIEW.uri()
-        return webClient
-            .post()
-            .uri(uri.template, uri.variables)
-            .body(BodyInserters.fromValue(review))
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
+        return webClient.post().kubernetesResource(review)
     }
 
     suspend fun user(): User {
@@ -225,16 +214,20 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
             .awaitBody()
     }
 
+    private suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
+        body: Kind
+    ): T {
+        return this.uri(body.uri(), body.uriVariables())
+            .body(BodyInserters.fromValue(body))
+            .bearerToken(token)
+            .retrieve()
+            .awaitBody()
+    }
+
     private suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
         resource: Kind
     ): T {
-        val variables = mapOf(
-            "namespace" to resource.metadata.namespace,
-            "kind" to "${resource.kind.toLowerCase()}s",
-            "name" to resource.metadata.name
-        )
-
-        return this.uri(resource.uri(), variables)
+        return this.uri(resource.uri(), resource.uriVariables())
             .bearerToken(token)
             .retrieve()
             .awaitBody()
@@ -245,19 +238,13 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
             resource: Kind,
             labels: Map<String, String> = emptyMap()
         ): KindList {
-        val variables = mapOf(
-            "namespace" to resource.metadata.namespace,
-            "kind" to "${resource.kind.toLowerCase()}s",
-            "name" to resource.metadata.name
-        )
-
         val spec = if (labels.isEmpty()) {
-            this.uri(resource.uri(), variables)
+            this.uri(resource.uri(), resource.uriVariables())
         } else {
             this.uri { builder ->
                 builder.path(resource.uri())
                     .queryParam("labelSelector", labels.map { "${it.key}=${it.value}" }.joinToString(","))
-                    .build(variables)
+                    .build(resource.uriVariables())
             }
         }
 
@@ -307,6 +294,12 @@ class KubernetesClient(
     private fun getUserToken() = userTokenFetcher.getUserToken()
 }
 
+fun HasMetadata.uriVariables() = mapOf(
+    "namespace" to this.metadata?.namespace,
+    "kind" to "${this.kind.toLowerCase()}s",
+    "name" to this.metadata?.name
+)
+
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
         "/api"
@@ -314,9 +307,13 @@ fun HasMetadata.uri(): String {
         "/apis"
     }
 
-    return this.metadata.namespace?.let {
-        "$contextRoot/${this.apiVersion}/namespaces/{namespace}/{kind}/{name}"
-    } ?: "$contextRoot/${this.apiVersion}/{kind}/{name}"
+    return if (this.metadata == null) {
+        "$contextRoot/${this.apiVersion}/{kind}"
+    } else {
+        this.metadata.namespace?.let {
+            "$contextRoot/${this.apiVersion}/namespaces/{namespace}/{kind}/{name}"
+        } ?: "$contextRoot/${this.apiVersion}/{kind}/{name}"
+    }
 }
 
 private class SkatteetatenKubernetesResource(private val kind: String, namespace: String, name: String? = null) :
@@ -334,8 +331,8 @@ private class SkatteetatenKubernetesResource(private val kind: String, namespace
     override fun getApiVersion() = "skatteetaten.no/v1"
 
     override fun setMetadata(metadata: ObjectMeta?) =
-        throw UnsupportedOperationException("Cannot set metadata on SkatteetatenResource")
+        throw UnsupportedOperationException("Cannot set metadata on SkatteetatenKubernetesResource")
 
     override fun setApiVersion(version: String?) =
-        throw UnsupportedOperationException("Cannot set apiVersion on SkatteetatenResource")
+        throw UnsupportedOperationException("Cannot set apiVersion on SkatteetatenKubernetesResource")
 }

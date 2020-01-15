@@ -2,6 +2,9 @@ package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
 import assertk.assertions.isNotNull
+import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
+import com.fkorotkov.kubernetes.authorization.resourceAttributes
+import com.fkorotkov.kubernetes.authorization.spec
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
@@ -94,6 +97,23 @@ class KubernetesUserTokenClientIntegrationTest {
         runBlocking {
             val u = kubernetesClient.user()
             assertThat(u).isNotNull()
+        }
+    }
+
+    @Test
+    fun `Self subject access review`() {
+        runBlocking {
+            val s = newSelfSubjectAccessReview {
+                spec {
+                    resourceAttributes {
+                        namespace = NAMESPACE
+                        verb = "update"
+                        resource = "deploymentconfigs"
+                    }
+                }
+            }
+            val selfSubjectAccessView = kubernetesClient.selfSubjectAccessView(s)
+            assertThat(selfSubjectAccessView).isNotNull()
         }
     }
 }
