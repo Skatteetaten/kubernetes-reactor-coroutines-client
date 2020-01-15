@@ -15,6 +15,7 @@ import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newImageStreamTag
 import com.fkorotkov.openshift.newProject
 import com.fkorotkov.openshift.newRoute
+import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
@@ -32,7 +33,6 @@ import io.fabric8.openshift.api.model.Route
 import io.fabric8.openshift.api.model.RouteList
 import io.fabric8.openshift.api.model.User
 import mu.KotlinLogging
-import no.skatteetaten.aurora.kubernetes.OpenShiftApiGroup.USER
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
@@ -206,12 +206,12 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     suspend fun user(): User {
-        return webClient
-            .get()
-            .uri(USER.uri().expand())
-            .bearerToken(token)
-            .retrieve()
-            .awaitBody()
+        val u = newUser {
+            metadata {
+                this.name = "~"
+            }
+        }
+        return webClient.get().kubernetesResource(u)
     }
 
     private suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
