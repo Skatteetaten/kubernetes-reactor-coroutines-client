@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient
 
 const val KUBERNETES_URL = "https://utv-master.paas.skead.no:8443"
 const val NAMESPACE = "aurora"
+const val NAMESPACE_DEV = "aurora-dev"
 const val NAME = "boober"
 
 fun kubernetesToken(environment: String = "utv-master"): String {

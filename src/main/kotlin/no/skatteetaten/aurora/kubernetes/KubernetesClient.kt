@@ -2,6 +2,7 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
@@ -65,10 +66,16 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     suspend fun deploy(namespace: String, name: String): JsonNode {
-        val uri = OpenShiftApiGroup.DEPLOYMENTREQUEST.uri(namespace, name)
+        val dc = newDeploymentConfig {
+            metadata {
+                this.namespace = namespace
+                this.name = name
+            }
+        }
+
         return webClient
             .post()
-            .uri(uri.template, uri.variables)
+            .uri("${dc.uri()}/instantiate", dc.uriVariables())
             .body(
                 BodyInserters.fromValue(
                     mapOf(
@@ -202,7 +209,7 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     suspend fun selfSubjectAccessView(review: SelfSubjectAccessReview): SelfSubjectAccessReview {
-        return webClient.post().kubernetesResource(review)
+        return webClient.post().kubernetesResource(newSelfSubjectAccessReview { }, review)
     }
 
     suspend fun user(): User {
@@ -215,9 +222,10 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
     }
 
     private suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
-        body: Kind
+        resource: Kind,
+        body: Any
     ): T {
-        return this.uri(body.uri(), body.uriVariables())
+        return this.uri(resource.uri(), resource.uriVariables())
             .body(BodyInserters.fromValue(body))
             .bearerToken(token)
             .retrieve()
@@ -235,9 +243,9 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
 
     private suspend inline fun <reified Kind : HasMetadata, reified KindList : KubernetesResourceList<Kind>>
         WebClient.RequestHeadersUriSpec<*>.kubernetesResources(
-            resource: Kind,
-            labels: Map<String, String> = emptyMap()
-        ): KindList {
+        resource: Kind,
+        labels: Map<String, String> = emptyMap()
+    ): KindList {
         val spec = if (labels.isEmpty()) {
             this.uri(resource.uri(), resource.uriVariables())
         } else {

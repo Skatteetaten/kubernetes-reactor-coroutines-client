@@ -116,4 +116,12 @@ class KubernetesUserTokenClientIntegrationTest {
             assertThat(selfSubjectAccessView).isNotNull()
         }
     }
+
+    @Test
+    fun `Execute deploy`() {
+        runBlocking {
+            val result = kubernetesClient.deploy(NAMESPACE_DEV, "boober")
+            assertThat(result).isNotNull()
+        }
+    }
 }
