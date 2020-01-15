@@ -1,7 +1,5 @@
 package no.skatteetaten.aurora.kubernetes
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
@@ -26,6 +24,7 @@ import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.ReplicationControllerList
 import io.fabric8.kubernetes.api.model.ServiceList
 import io.fabric8.kubernetes.api.model.authorization.SelfSubjectAccessReview
+import io.fabric8.kubernetes.api.model.extensions.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.ImageStreamTag
 import io.fabric8.openshift.api.model.Project
@@ -33,39 +32,41 @@ import io.fabric8.openshift.api.model.ProjectList
 import io.fabric8.openshift.api.model.Route
 import io.fabric8.openshift.api.model.RouteList
 import io.fabric8.openshift.api.model.User
-import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 
-private val logger = KotlinLogging.logger {}
+abstract class AbstractKubernetesClient(private val webClient: WebClient, private val token: String? = null) {
 
-abstract class AbstractKubernetesClient(val webClient: WebClient, val token: String? = null) {
+    suspend fun scale(namespace: String, name: String, count: Int): Scale {
+        val dc = newDeploymentConfig {
+            metadata {
+                this.namespace = namespace
+                this.name = name
+            }
+        }
 
-    suspend fun scale(ns: String, n: String, count: Int): JsonNode {
         val scale = newScale {
             metadata {
-                namespace = ns
-                name = n
+                this.namespace = namespace
+                this.name = name
             }
             spec {
                 replicas = count
             }
         }
-        val uri = OpenShiftApiGroup.DEPLOYMENTCONFIGSCALE.uri(ns, n)
-        logger.debug("URL=${uri.expand()} body=${jacksonObjectMapper().writeValueAsString(scale)}")
 
         return webClient
             .put()
-            .uri(uri.template, uri.variables)
+            .uri("${dc.uri()}/scale", dc.uriVariables())
             .body(BodyInserters.fromValue(scale))
             .bearerToken(token)
             .retrieve()
             .awaitBody()
     }
 
-    suspend fun deploy(namespace: String, name: String): JsonNode {
+    suspend fun deploy(namespace: String, name: String): DeploymentConfig {
         val dc = newDeploymentConfig {
             metadata {
                 this.namespace = namespace
@@ -243,9 +244,9 @@ abstract class AbstractKubernetesClient(val webClient: WebClient, val token: Str
 
     private suspend inline fun <reified Kind : HasMetadata, reified KindList : KubernetesResourceList<Kind>>
         WebClient.RequestHeadersUriSpec<*>.kubernetesResources(
-        resource: Kind,
-        labels: Map<String, String> = emptyMap()
-    ): KindList {
+            resource: Kind,
+            labels: Map<String, String> = emptyMap()
+        ): KindList {
         val spec = if (labels.isEmpty()) {
             this.uri(resource.uri(), resource.uriVariables())
         } else {

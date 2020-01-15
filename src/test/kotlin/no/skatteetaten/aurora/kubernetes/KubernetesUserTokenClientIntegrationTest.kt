@@ -6,6 +6,7 @@ import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 @EnabledIfKubernetesToken
@@ -117,11 +118,21 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
+    @Disabled("add name before running test")
     @Test
     fun `Execute deploy`() {
         runBlocking {
-            val result = kubernetesClient.deploy(NAMESPACE_DEV, "boober")
-            assertThat(result).isNotNull()
+            val dc = kubernetesClient.deploy(NAMESPACE_DEV, "")
+            assertThat(dc).isNotNull()
+        }
+    }
+
+    @Disabled("add name before running test")
+    @Test
+    fun `Execute scale`() {
+        runBlocking {
+            val s = kubernetesClient.scale(NAMESPACE_DEV, "", 2)
+            assertThat(s).isNotNull()
         }
     }
 }
