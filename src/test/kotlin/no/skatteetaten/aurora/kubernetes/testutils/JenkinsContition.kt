@@ -1,4 +1,4 @@
-package no.skatteetaten.aurora.kubernetes
+package no.skatteetaten.aurora.kubernetes.testutils
 
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition

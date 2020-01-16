@@ -1,4 +1,4 @@
-package no.skatteetaten.aurora.kubernetes
+package no.skatteetaten.aurora.kubernetes.testutils
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -16,7 +16,11 @@ const val NAMESPACE_DEV = "aurora-dev"
 const val NAME = "boober"
 
 fun kubernetesToken(environment: String = "utv-master"): String {
-    val content = File("${System.getProperty("user.home")}/.kube/config").readText()
+    val kubernetesConfig = File("${System.getProperty("user.home")}/.kube/config")
+    if (!kubernetesConfig.exists())
+        throw IllegalArgumentException("No kubernetes config file found in ${kubernetesConfig.absolutePath}")
+
+    val content = kubernetesConfig.readText()
     val values = ObjectMapper(YAMLFactory()).readTree(content)
     return values.at("/users").iterator().asSequence()
         .firstOrNull { it.at("/name").textValue().contains("$environment-paas-skead-no") }
@@ -45,8 +49,8 @@ class EnabledIfKubernetesTokenCondition : ExecutionCondition {
         return try {
             kubernetesToken()
             ConditionEvaluationResult.enabled("Kubernetes token found")
-        } catch (ignored: IllegalArgumentException) {
-            ConditionEvaluationResult.disabled("No Kubernetes token")
+        } catch (e: IllegalArgumentException) {
+            ConditionEvaluationResult.disabled("Test is disabled, no Kubernetes token. ${e.message}")
         }
     }
 }

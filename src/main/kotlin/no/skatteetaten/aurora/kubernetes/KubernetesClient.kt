@@ -264,24 +264,6 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
         token?.let {
             this.header(HttpHeaders.AUTHORIZATION, "Bearer $token")
         } ?: this
-
-    fun WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
-        apiGroup: ApiGroup,
-        namespace: String? = null,
-        name: String? = null,
-        labels: Map<String, String> = emptyMap()
-    ): WebClient.RequestHeadersSpec<*> {
-        val uri = apiGroup.uri(namespace, name)
-        return if (labels.isEmpty()) {
-            this.uri(uri.template, uri.variables)
-        } else {
-            this.uri { builder ->
-                builder.path(uri.template)
-                    .queryParam("labelSelector", labels.map { "${it.key}=${it.value}" }.joinToString(","))
-                    .build(uri.variables)
-            }
-        }
-    }
 }
 
 interface UserTokenFetcher {

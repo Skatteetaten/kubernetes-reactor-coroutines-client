@@ -7,16 +7,15 @@ def overrides = [
     credentialsId: "github",
     checkstyle : false,
     openshiftBuild: false,
+    sonarQube: false,
     docs: false,
     javaVersion: 11,
-    jiraFiksetIKomponentversjon: true,
-    chatRoom: "#aos-notifications",
     versionStrategy: [
       [ branch: 'master', versionHint: '1' ]
     ]
 ]
 
-fileLoader.withGit(overrides.pipelineScript,, overrides.scriptVersion) {
+fileLoader.withGit(overrides.pipelineScript, overrides.scriptVersion) {
    jenkinsfile = fileLoader.load('templates/leveransepakke')
 }
 jenkinsfile.gradle(overrides.scriptVersion, overrides)

@@ -6,6 +6,13 @@ import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
 import kotlinx.coroutines.runBlocking
+import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
+import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
+import no.skatteetaten.aurora.kubernetes.testutils.NAME
+import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
+import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
+import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
+import no.skatteetaten.aurora.kubernetes.testutils.testWebClient
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
@@ -13,7 +20,10 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesUserTokenClient(kubernetesToken(), testWebClient())
+    private val kubernetesClient = KubernetesUserTokenClient(
+        kubernetesToken(),
+        testWebClient()
+    )
 
     @Test
     fun `Get projects`() {
@@ -30,7 +40,10 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get routes`() {
         runBlocking {
             val routes = kubernetesClient.routes(NAMESPACE)
-            val route = kubernetesClient.route(NAMESPACE, NAME)
+            val route = kubernetesClient.route(
+                NAMESPACE,
+                NAME
+            )
 
             assertThat(routes).isNotNull()
             assertThat(route).isNotNull()
@@ -40,7 +53,10 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.deploymentConfig(NAMESPACE, NAME)
+            val dc = kubernetesClient.deploymentConfig(
+                NAMESPACE,
+                NAME
+            )
             assertThat(dc).isNotNull()
         }
     }
@@ -49,7 +65,10 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get application deployments`() {
         runBlocking {
             val applicationDeployments = kubernetesClient.applicationDeployments(NAMESPACE)
-            val ad = kubernetesClient.applicationDeployment(NAMESPACE, NAME)
+            val ad = kubernetesClient.applicationDeployment(
+                NAMESPACE,
+                NAME
+            )
 
             assertThat(applicationDeployments).isNotNull()
             assertThat(ad).isNotNull()
@@ -89,7 +108,9 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get image stream tag`() {
         runBlocking {
-            val ist = kubernetesClient.imageStreamTag(NAMESPACE, NAME, "latest")
+            val ist = kubernetesClient.imageStreamTag(
+                NAMESPACE,
+                NAME, "latest")
             assertThat(ist).isNotNull()
         }
     }
