@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
+@DisableIfJenkins
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
