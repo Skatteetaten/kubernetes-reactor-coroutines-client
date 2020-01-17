@@ -1,4 +1,4 @@
-package no.skatteetaten.aurora.mean.genie.service
+package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono
 import reactor.netty.http.client.PrematureCloseException
 
 /**
- * The integration test will stop the mock openshift server, which will cause a PrematureCloseException or ConnectException.
+ * The integration test will stop the mock Kubernetes server, which will cause a PrematureCloseException or ConnectException.
  * This needs to be handled and stop the loop in the Watcher code.
  */
 @Profile("test")

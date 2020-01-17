@@ -6,7 +6,6 @@ import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import java.io.File
 import java.io.FileInputStream
-import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -20,11 +19,9 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
-import org.springframework.core.io.Resource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.util.StreamUtils
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
@@ -92,14 +89,18 @@ class KubernetesClientConfig(
         return ReactorNettyWebSocketClient(
             HttpClient.create()
                 .baseUrl(kubernetesUrl)
-                .headers {
-                    it.add("User-Agent", applicationName)
+                .headers { headers ->
+                    File(tokenLocation).takeIf { it.isFile }?.let {
+                        headers.add(HttpHeaders.AUTHORIZATION, "Bearer ${it.readText()}")
+                    }
+
+                    headers.add("User-Agent", applicationName)
                 }
         )
     }
 
     @Bean
-    fun openshiftTcpClientWrapper(
+    fun kubernetesTcpClientWrapper(
         @Value("\${kubernetes.readTimeout:5000}") readTimeout: Long,
         @Value("\${kubernetes.writeTimeout:5000}") writeTimeout: Long,
         @Value("\${kubernetes.connectTimeout:5000}") connectTimeout: Int,
@@ -138,7 +139,7 @@ class KubernetesClientConfig(
     @Bean
     @Primary
     @Profile("kubernetes")
-    fun openshiftSSLContext(@Value("\${trust.store}") trustStoreLocation: String): KeyStore =
+    fun kubernetesSSLContext(@Value("\${trust.store}") trustStoreLocation: String): KeyStore =
         KeyStore.getInstance(KeyStore.getDefaultType())?.let { ks ->
             ks.load(FileInputStream(trustStoreLocation), "changeit".toCharArray())
             val fis = FileInputStream("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
@@ -152,5 +153,3 @@ class KubernetesClientConfig(
 private fun WebClient.Builder.defaultHeaders(applicationName: String) = this
     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
     .defaultHeader("User-Agent", applicationName)
-
-fun Resource.readContent() = StreamUtils.copyToString(this.inputStream, StandardCharsets.UTF_8)
