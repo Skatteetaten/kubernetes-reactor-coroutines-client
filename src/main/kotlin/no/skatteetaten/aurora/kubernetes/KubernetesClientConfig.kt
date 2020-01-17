@@ -4,8 +4,8 @@ import io.netty.channel.ChannelOption
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
+import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
@@ -13,10 +13,11 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.TrustManagerFactory
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
 import org.springframework.core.io.Resource
@@ -31,30 +32,44 @@ import reactor.netty.http.client.HttpClient
 import reactor.netty.tcp.SslProvider
 import reactor.netty.tcp.TcpClient
 
-const val HEADER_KLIENTID = "KlientID"
-
 private val logger = KotlinLogging.logger {}
 
+enum class ClientTypes {
+    USER_TOKEN, SERVICE_ACCOUNT
+}
+
+@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
+@Qualifier
+annotation class TargetClient(val value: ClientTypes)
+
 @Configuration
-class WebclientKubernetesConfig(
+class KubernetesClientConfig(
     @Value("\${spring.application.name}") val applicationName: String,
     @Value("\${kubernetes.url}") val kubernetesUrl: String,
-    @Value("\${kubernetes.tokenLocation:file:/var/run/secrets/kubernetes.io/serviceaccount/token}") val token: Resource
-) : BeanPostProcessor {
+    @Value("\${kubernetes.tokenLocation:/var/run/secrets/kubernetes.io/serviceaccount/token}") val tokenLocation: String
+) {
 
+    @Lazy(true)
     @Bean
-    fun kubernetesClient(
-        webClient: WebClient,
-        userTokenFetcher: UserTokenFetcher
-    ) = KubernetesClient(webClient, userTokenFetcher)
+    @TargetClient(ClientTypes.SERVICE_ACCOUNT)
+    fun kubernetesClientServiceAccount(webClient: WebClient) =
+        KubernetesClient.create(webClient, File(tokenLocation).readText())
+
+    @Lazy(true)
+    @Bean
+    @Primary
+    @TargetClient(ClientTypes.USER_TOKEN)
+    fun kubernetesClientUserToken(webClient: WebClient, tokenFetcher: TokenFetcher) =
+        KubernetesClient.create(webClient, tokenFetcher)
 
     @Bean
     fun webClient(
         builder: WebClient.Builder,
         tcpClient: TcpClient
     ): WebClient {
-        logger.debug("OpenshiftUrl=$kubernetesUrl")
-        val b = builder
+        logger.debug("Kubernetes url=$kubernetesUrl")
+        return builder
             .baseUrl(kubernetesUrl)
             .defaultHeaders(applicationName)
             .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
@@ -66,27 +81,18 @@ class WebclientKubernetesConfig(
                         }
                     }.build()
             )
-
-        try {
-            b.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer ${token.readContent()}")
-        } catch (e: IOException) {
-            logger.info("No token file found, will not add Authorization header to WebClient")
-        }
-
-        return b.build()
+            .build()
     }
 
     @Bean
     fun websocketClient(
         tcpClient: TcpClient,
-        @Value("\${kubernetes.url}") openshiftUrl: String,
-        @Value("\${kubernetes.tokenLocation:file:/var/run/secrets/kubernetes.io/serviceaccount/token}") token: Resource
+        @Value("\${kubernetes.url}") kubernetesUrl: String
     ): ReactorNettyWebSocketClient {
         return ReactorNettyWebSocketClient(
             HttpClient.create()
-                .baseUrl(openshiftUrl)
+                .baseUrl(kubernetesUrl)
                 .headers {
-                    it.add(HttpHeaders.AUTHORIZATION, "Bearer ${token.readContent()}")
                     it.add("User-Agent", applicationName)
                 }
         )

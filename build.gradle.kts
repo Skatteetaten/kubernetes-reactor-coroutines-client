@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.spring") version "1.3.61"
     id("org.jlleitschuh.gradle.ktlint") version "9.1.1"
     id("org.sonarqube") version "2.8"
-    id("org.springframework.boot") version "2.2.2.RELEASE"
+    id("org.springframework.boot") version "2.2.3.RELEASE"
     id("org.asciidoctor.convert") version "2.3.0"
 
     id("com.gorylenko.gradle-git-properties") version "2.2.0"
@@ -28,6 +28,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.9.3")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.19")
     testImplementation("no.skatteetaten.aurora:mockmvc-extensions-kotlin:1.0.4")
-    testImplementation("io.projectreactor:reactor-test:3.3.1.RELEASE")
+    testImplementation("io.projectreactor:reactor-test:3.3.2.RELEASE")
     testImplementation("org.awaitility:awaitility-kotlin:4.0.2")
+    testImplementation("com.ninja-squad:springmockk:2.0.0")
 }

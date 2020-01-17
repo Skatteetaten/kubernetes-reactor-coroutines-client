@@ -2,6 +2,7 @@ package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.newObjectMeta
 import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.openshift.newDeploymentConfig
@@ -30,5 +31,11 @@ class KubernetesClientTest {
         }
 
         assertThat(p.uri()).isEqualTo("/api/v1/{kind}/{name}")
+    }
+
+    @Test
+    fun `Build Kubernetes uri without namespace and name`() {
+        val s = newSelfSubjectAccessReview {}
+        assertThat(s.uri()).isEqualTo("/apis/authorization.k8s.io/v1/{kind}")
     }
 }

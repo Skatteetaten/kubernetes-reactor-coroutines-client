@@ -20,10 +20,7 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesUserTokenClient(
-        kubernetesToken(),
-        testWebClient()
-    )
+    private val kubernetesClient = KubernetesClient.create(testWebClient(), kubernetesToken())
 
     @Test
     fun `Get projects`() {
@@ -110,7 +107,8 @@ class KubernetesUserTokenClientIntegrationTest {
         runBlocking {
             val ist = kubernetesClient.imageStreamTag(
                 NAMESPACE,
-                NAME, "latest")
+                NAME, "latest"
+            )
             assertThat(ist).isNotNull()
         }
     }

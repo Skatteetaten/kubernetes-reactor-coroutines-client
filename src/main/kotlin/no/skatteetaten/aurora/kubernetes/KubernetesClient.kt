@@ -37,7 +37,15 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 
-abstract class AbstractKubernetesClient(private val webClient: WebClient, private val token: String? = null) {
+class KubernetesClient(private val webClient: WebClient, private val tokenFetcher: TokenFetcher) {
+
+    companion object {
+        fun create(webClient: WebClient, tokenFetcher: TokenFetcher) = KubernetesClient(webClient, tokenFetcher)
+
+        fun create(webClient: WebClient, token: String) = KubernetesClient(webClient, object : TokenFetcher {
+            override fun token() = token
+        })
+    }
 
     suspend fun scale(namespace: String, name: String, count: Int): Scale {
         val dc = newDeploymentConfig {
@@ -61,7 +69,7 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
             .put()
             .uri("${dc.uri()}/scale", dc.uriVariables())
             .body(BodyInserters.fromValue(scale))
-            .bearerToken(token)
+            .bearerToken(tokenFetcher.token())
             .retrieve()
             .awaitBody()
     }
@@ -88,7 +96,7 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
                     )
                 )
             )
-            .bearerToken(token)
+            .bearerToken(tokenFetcher.token())
             .retrieve()
             .awaitBody()
     }
@@ -228,7 +236,7 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
     ): T {
         return this.uri(resource.uri(), resource.uriVariables())
             .body(BodyInserters.fromValue(body))
-            .bearerToken(token)
+            .bearerToken(tokenFetcher.token())
             .retrieve()
             .awaitBody()
     }
@@ -237,7 +245,7 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
         resource: Kind
     ): T {
         return this.uri(resource.uri(), resource.uriVariables())
-            .bearerToken(token)
+            .bearerToken(tokenFetcher.token())
             .retrieve()
             .awaitBody()
     }
@@ -257,7 +265,7 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
             }
         }
 
-        return spec.bearerToken(token).retrieve().awaitBody()
+        return spec.bearerToken(tokenFetcher.token()).retrieve().awaitBody()
     }
 
     private fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
@@ -266,23 +274,8 @@ abstract class AbstractKubernetesClient(private val webClient: WebClient, privat
         } ?: this
 }
 
-interface UserTokenFetcher {
-    fun getUserToken(): String
-}
-
-class KubernetesServiceAccountClient(webClient: WebClient) : AbstractKubernetesClient(webClient)
-class KubernetesUserTokenClient(token: String, webClient: WebClient) : AbstractKubernetesClient(webClient, token)
-
-class KubernetesClient(
-    private val webClient: WebClient,
-    private val userTokenFetcher: UserTokenFetcher
-) {
-    private val kubernetesServiceAccountClient = KubernetesServiceAccountClient(webClient)
-    fun serviceAccount() = kubernetesServiceAccountClient
-
-    fun userToken(token: String = getUserToken()) = KubernetesUserTokenClient(token, webClient)
-
-    private fun getUserToken() = userTokenFetcher.getUserToken()
+interface TokenFetcher {
+    fun token(): String
 }
 
 fun HasMetadata.uriVariables() = mapOf(
@@ -322,8 +315,8 @@ private class SkatteetatenKubernetesResource(private val kind: String, namespace
     override fun getApiVersion() = "skatteetaten.no/v1"
 
     override fun setMetadata(metadata: ObjectMeta?) =
-        throw UnsupportedOperationException("Cannot set metadata on SkatteetatenKubernetesResource")
+        throw UnsupportedOperationException("Cannot set metadata on custom resource")
 
     override fun setApiVersion(version: String?) =
-        throw UnsupportedOperationException("Cannot set apiVersion on SkatteetatenKubernetesResource")
+        throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
 }
