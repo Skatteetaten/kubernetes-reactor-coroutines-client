@@ -5,7 +5,22 @@ import assertk.assertions.isNotNull
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
+import com.fkorotkov.kubernetes.metadata
+import com.fkorotkov.kubernetes.newObjectMeta
+import com.fkorotkov.kubernetes.newPod
+import com.fkorotkov.kubernetes.newReplicationController
+import com.fkorotkov.kubernetes.newService
+import com.fkorotkov.openshift.metadata
+import com.fkorotkov.openshift.newDeploymentConfig
+import com.fkorotkov.openshift.newImageStreamTag
+import com.fkorotkov.openshift.newProject
+import com.fkorotkov.openshift.newRoute
+import io.fabric8.kubernetes.api.model.PodList
+import io.fabric8.kubernetes.api.model.ReplicationControllerList
+import io.fabric8.kubernetes.api.model.ServiceList
+import io.fabric8.openshift.api.model.ProjectList
 import kotlinx.coroutines.runBlocking
+import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
@@ -25,8 +40,8 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get projects`() {
         runBlocking {
-            val projects = kubernetesClient.projects()
-            val project = kubernetesClient.project(NAMESPACE)
+            val projects: ProjectList = kubernetesClient.getList(newProject { })
+            val project = kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
 
             assertThat(projects).isNotNull()
             assertThat(project).isNotNull()
@@ -36,10 +51,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get routes`() {
         runBlocking {
-            val routes = kubernetesClient.routes(NAMESPACE)
-            val route = kubernetesClient.route(
-                NAMESPACE,
-                NAME
+            val routes = kubernetesClient.getList(newRoute { metadata { namespace = NAMESPACE } })
+            val route = kubernetesClient.get(
+                newRoute {
+                    metadata {
+                        namespace = NAMESPACE
+                        name = NAME
+                    }
+                }
             )
 
             assertThat(routes).isNotNull()
@@ -50,10 +69,12 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.deploymentConfig(
-                NAMESPACE,
-                NAME
-            )
+            val dc = kubernetesClient.get(newDeploymentConfig {
+                metadata {
+                    namespace = NAMESPACE
+                    name = NAME
+                }
+            })
             assertThat(dc).isNotNull()
         }
     }
@@ -61,21 +82,35 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get application deployments`() {
         runBlocking {
-            val applicationDeployments = kubernetesClient.applicationDeployments(NAMESPACE)
-            val ad = kubernetesClient.applicationDeployment(
-                NAMESPACE,
-                NAME
-            )
+            val ad: ApplicationDeployment =
+                kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+                    metadata {
+                        namespace = NAMESPACE
+                        name = NAME
+                    }
+                })
 
-            assertThat(applicationDeployments).isNotNull()
+            val ads: ApplicationDeploymentList =
+                kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+                    metadata {
+                        namespace = NAMESPACE
+                    }
+                })
+
             assertThat(ad).isNotNull()
+            assertThat(ads).isNotNull()
         }
     }
 
     @Test
     fun `Get services`() {
         runBlocking {
-            val services = kubernetesClient.services(NAMESPACE)
+            val services: ServiceList = kubernetesClient.getList(newService {
+                metadata = newObjectMeta {
+                    namespace = NAMESPACE
+                    name = NAME
+                }
+            })
             assertThat(services).isNotNull()
         }
     }
@@ -83,8 +118,18 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get pods`() {
         runBlocking {
-            val pods = kubernetesClient.pods(NAMESPACE)
-            val pods2 = kubernetesClient.pods2(NAMESPACE, pods.items.first().metadata.name)
+            val pods: PodList = kubernetesClient.getList(newPod {
+                metadata = newObjectMeta {
+                    namespace = NAMESPACE
+                }
+            })
+
+            val pods2: PodList = kubernetesClient.getList(newPod {
+                metadata {
+                    namespace = NAMESPACE
+                    name = pods.items.first().metadata.name
+                }
+            })
 
             assertThat(pods).isNotNull()
             assertThat(pods2).isNotNull()
@@ -94,8 +139,18 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get replication controllers`() {
         runBlocking {
-            val rcs = kubernetesClient.replicationControllers(NAMESPACE)
-            val rc = kubernetesClient.replicationController(NAMESPACE, rcs.items.first().metadata.name)
+            val rcs: ReplicationControllerList = kubernetesClient.getList(newReplicationController {
+                metadata {
+                    namespace = NAMESPACE
+                }
+            })
+
+            val rc = kubernetesClient.get(newReplicationController {
+                metadata {
+                    namespace = NAMESPACE
+                    name = rcs.items.first().metadata.name
+                }
+            })
 
             assertThat(rcs).isNotNull()
             assertThat(rc).isNotNull()
@@ -105,10 +160,13 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get image stream tag`() {
         runBlocking {
-            val ist = kubernetesClient.imageStreamTag(
-                NAMESPACE,
-                NAME, "latest"
-            )
+            val ist = kubernetesClient.get(newImageStreamTag {
+                metadata {
+                    namespace = NAMESPACE
+                    name = "$NAME:latest"
+                }
+            })
+
             assertThat(ist).isNotNull()
         }
     }
@@ -116,7 +174,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get user`() {
         runBlocking {
-            val u = kubernetesClient.user()
+            val u = kubernetesClient.get(newCurrentUser())
             assertThat(u).isNotNull()
         }
     }
@@ -133,7 +191,7 @@ class KubernetesUserTokenClientIntegrationTest {
                     }
                 }
             }
-            val selfSubjectAccessView = kubernetesClient.selfSubjectAccessView(s)
+            val selfSubjectAccessView = kubernetesClient.post(s)
             assertThat(selfSubjectAccessView).isNotNull()
         }
     }

@@ -47,6 +47,20 @@ class KubernetesClientConfig(
     @Value("\${kubernetes.tokenLocation:/var/run/secrets/kubernetes.io/serviceaccount/token}") val tokenLocation: String
 ) {
 
+    @Bean
+    fun kubernetesWatcher(
+        websocketClient: ReactorNettyWebSocketClient,
+        closeableWatcher: CloseableWatcher
+    ) = KubernetesWatcher(websocketClient, closeableWatcher)
+
+    @Bean
+    @Profile("test")
+    fun testCloseableWatcher() = TestCloseableWatcher()
+
+    @Bean
+    @Profile("!test")
+    fun kubernetesCloseableWatcher() = KubernetesCloseableWatcher()
+
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)

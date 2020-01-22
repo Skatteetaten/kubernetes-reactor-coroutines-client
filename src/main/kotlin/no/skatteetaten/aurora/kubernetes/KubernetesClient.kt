@@ -1,43 +1,21 @@
 package no.skatteetaten.aurora.kubernetes
 
-import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.extensions.metadata
 import com.fkorotkov.kubernetes.extensions.newScale
 import com.fkorotkov.kubernetes.extensions.spec
-import com.fkorotkov.kubernetes.metadata
-import com.fkorotkov.kubernetes.newObjectMeta
-import com.fkorotkov.kubernetes.newPod
-import com.fkorotkov.kubernetes.newReplicationController
-import com.fkorotkov.kubernetes.newService
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
-import com.fkorotkov.openshift.newImageStreamTag
-import com.fkorotkov.openshift.newProject
-import com.fkorotkov.openshift.newRoute
 import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
-import io.fabric8.kubernetes.api.model.ObjectMeta
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.PodList
-import io.fabric8.kubernetes.api.model.ReplicationController
-import io.fabric8.kubernetes.api.model.ReplicationControllerList
-import io.fabric8.kubernetes.api.model.ServiceList
-import io.fabric8.kubernetes.api.model.authorization.SelfSubjectAccessReview
 import io.fabric8.kubernetes.api.model.extensions.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
-import io.fabric8.openshift.api.model.ImageStreamTag
-import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.api.model.ProjectList
-import io.fabric8.openshift.api.model.Route
-import io.fabric8.openshift.api.model.RouteList
-import io.fabric8.openshift.api.model.User
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 
-class KubernetesClient(private val webClient: WebClient, private val tokenFetcher: TokenFetcher) {
+class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher) {
 
     companion object {
         fun create(webClient: WebClient, tokenFetcher: TokenFetcher) = KubernetesClient(webClient, tokenFetcher)
@@ -101,136 +79,41 @@ class KubernetesClient(private val webClient: WebClient, private val tokenFetche
             .awaitBody()
     }
 
-    suspend fun pods2(namespace: String, name: String): Pod {
-        val pod = newPod {
-            metadata {
-                this.name = name
-                this.namespace = namespace
-            }
-        }
-        return webClient.get().kubernetesResource(pod)
+    suspend inline fun <reified Kind : HasMetadata, reified T : Any> getResource(
+        resource: Kind,
+        labels: Map<String, String> = emptyMap()
+    ): T {
+        return webClient.get().kubernetesResource(resource, labels)
     }
 
-    suspend fun deploymentConfig(namespace: String, name: String): DeploymentConfig {
-        val dc = newDeploymentConfig {
-            metadata {
-                this.name = name
-                this.namespace = namespace
-            }
-        }
-
-        return webClient.get().kubernetesResource(dc)
+    suspend inline fun <reified Kind : HasMetadata> get(
+        resource: Kind,
+        labels: Map<String, String> = emptyMap()
+    ): Kind {
+        return getResource(resource, labels)
     }
 
-    suspend fun applicationDeployment(namespace: String, name: String): ApplicationDeployment {
-        val r = SkatteetatenKubernetesResource("ApplicationDeployment", namespace, name)
-        return webClient.get().kubernetesResource(r)
+    suspend inline fun <reified Kind : HasMetadata, reified ListKind : KubernetesResourceList<Kind>> getList(resource: Kind): ListKind {
+        return getResource(resource)
     }
 
-    suspend fun applicationDeployments(namespace: String): ApplicationDeploymentList {
-        val r = SkatteetatenKubernetesResource("ApplicationDeployment", namespace)
-        return webClient.get().kubernetesResource(r)
+    suspend inline fun <reified Kind : HasMetadata> postResource(resource: Kind, body: Any = resource): Kind {
+        return webClient.post().kubernetesResource(resource, body)
     }
 
-    suspend fun route(namespace: String, name: String): Route {
-        val r = newRoute {
-            metadata {
-                this.namespace = namespace
-                this.name = name
-            }
-        }
-        return webClient.get().kubernetesResource(r)
+    suspend inline fun <reified Kind : HasMetadata> post(body: Kind): Kind {
+        return postResource(resource = body, body = body)
     }
 
-    suspend fun routes(namespace: String, labels: Map<String, String> = emptyMap()): RouteList {
-        val r = newRoute {
-            metadata {
-                this.namespace = namespace
-            }
-        }
-        return webClient.get().kubernetesResources(r, labels)
+    suspend inline fun <reified Kind : HasMetadata> put(resource: Kind, body: Any = resource): Kind {
+        return webClient.put().kubernetesResource(resource, body)
     }
 
-    suspend fun services(namespace: String?, labels: Map<String, String> = emptyMap()): ServiceList {
-        val s = newService {
-            metadata {
-                this.namespace = namespace
-            }
-        }
-
-        return webClient.get().kubernetesResources(s, labels)
+    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind): Kind {
+        return webClient.delete().kubernetesResource(resource)
     }
 
-    suspend fun pods(namespace: String, labels: Map<String, String> = emptyMap()): PodList {
-        val p = newPod {
-            metadata {
-                this.namespace = namespace
-            }
-        }
-
-        return webClient.get().kubernetesResources(p, labels)
-    }
-
-    suspend fun replicationControllers(namespace: String): ReplicationControllerList {
-        val rc = newReplicationController {
-            metadata {
-                this.namespace = namespace
-            }
-        }
-
-        return webClient.get().kubernetesResources(rc)
-    }
-
-    suspend fun replicationController(namespace: String, name: String): ReplicationController {
-        val rc = newReplicationController {
-            metadata {
-                this.namespace = namespace
-                this.name = name
-            }
-        }
-
-        return webClient.get().kubernetesResource(rc)
-    }
-
-    suspend fun imageStreamTag(namespace: String, name: String, tag: String): ImageStreamTag {
-        val ist = newImageStreamTag {
-            metadata {
-                this.namespace = namespace
-                this.name = "$name:$tag"
-            }
-        }
-
-        return webClient.get().kubernetesResource(ist)
-    }
-
-    suspend fun project(name: String): Project {
-        val p = newProject {
-            metadata {
-                this.name = name
-            }
-        }
-
-        return webClient.get().kubernetesResource(p)
-    }
-
-    suspend fun projects(): ProjectList {
-        return webClient.get().kubernetesResources(newProject { metadata {} })
-    }
-
-    suspend fun selfSubjectAccessView(review: SelfSubjectAccessReview): SelfSubjectAccessReview {
-        return webClient.post().kubernetesResource(newSelfSubjectAccessReview { }, review)
-    }
-
-    suspend fun user(): User {
-        val u = newUser {
-            metadata {
-                this.name = "~"
-            }
-        }
-        return webClient.get().kubernetesResource(u)
-    }
-
-    private suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
+    suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
         resource: Kind,
         body: Any
     ): T {
@@ -241,20 +124,10 @@ class KubernetesClient(private val webClient: WebClient, private val tokenFetche
             .awaitBody()
     }
 
-    private suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
-        resource: Kind
+    suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
+        resource: Kind,
+        labels: Map<String, String> = emptyMap()
     ): T {
-        return this.uri(resource.uri(), resource.uriVariables())
-            .bearerToken(tokenFetcher.token())
-            .retrieve()
-            .awaitBody()
-    }
-
-    private suspend inline fun <reified Kind : HasMetadata, reified KindList : KubernetesResourceList<Kind>>
-        WebClient.RequestHeadersUriSpec<*>.kubernetesResources(
-            resource: Kind,
-            labels: Map<String, String> = emptyMap()
-        ): KindList {
         val spec = if (labels.isEmpty()) {
             this.uri(resource.uri(), resource.uriVariables())
         } else {
@@ -268,7 +141,7 @@ class KubernetesClient(private val webClient: WebClient, private val tokenFetche
         return spec.bearerToken(tokenFetcher.token()).retrieve().awaitBody()
     }
 
-    private fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
+    fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
         token?.let {
             this.header(HttpHeaders.AUTHORIZATION, "Bearer $token")
         } ?: this
@@ -300,23 +173,4 @@ fun HasMetadata.uri(): String {
     }
 }
 
-private class SkatteetatenKubernetesResource(private val kind: String, namespace: String, name: String? = null) :
-    HasMetadata {
-
-    private val metadata = newObjectMeta {
-        this.namespace = namespace
-        this.name = name
-    }
-
-    override fun getMetadata() = metadata
-
-    override fun getKind() = kind
-
-    override fun getApiVersion() = "skatteetaten.no/v1"
-
-    override fun setMetadata(metadata: ObjectMeta?) =
-        throw UnsupportedOperationException("Cannot set metadata on custom resource")
-
-    override fun setApiVersion(version: String?) =
-        throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
-}
+fun newCurrentUser() = newUser { metadata { name = "~" } }

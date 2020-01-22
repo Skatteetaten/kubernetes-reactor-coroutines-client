@@ -1,0 +1,5 @@
+integrations:
+    kubernetes:
+        port: 8081
+    custom:
+        port: 8082
