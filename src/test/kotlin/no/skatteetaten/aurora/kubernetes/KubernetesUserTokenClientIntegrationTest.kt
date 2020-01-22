@@ -198,18 +198,18 @@ class KubernetesUserTokenClientIntegrationTest {
 
     @Disabled("add name before running test")
     @Test
-    fun `Execute deploy`() {
+    fun `Roll out deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.deploy(NAMESPACE_DEV, "")
+            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE_DEV, "")
             assertThat(dc).isNotNull()
         }
     }
 
     @Disabled("add name before running test")
     @Test
-    fun `Execute scale`() {
+    fun `Scale deployment config`() {
         runBlocking {
-            val s = kubernetesClient.scale(NAMESPACE_DEV, "", 2)
+            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE_DEV, "", 2)
             assertThat(s).isNotNull()
         }
     }

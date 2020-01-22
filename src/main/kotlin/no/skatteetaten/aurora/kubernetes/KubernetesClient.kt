@@ -25,7 +25,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         })
     }
 
-    suspend fun scale(namespace: String, name: String, count: Int): Scale {
+    suspend fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Scale {
         val dc = newDeploymentConfig {
             metadata {
                 this.namespace = namespace
@@ -52,7 +52,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .awaitBody()
     }
 
-    suspend fun deploy(namespace: String, name: String): DeploymentConfig {
+    suspend fun rolloutDeploymentConfig(namespace: String, name: String): DeploymentConfig {
         val dc = newDeploymentConfig {
             metadata {
                 this.namespace = namespace
