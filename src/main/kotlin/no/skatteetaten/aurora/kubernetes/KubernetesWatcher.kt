@@ -2,21 +2,10 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import java.net.ConnectException
 import java.net.URI
 import mu.KotlinLogging
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
 import reactor.core.publisher.Mono
-import reactor.netty.http.client.PrematureCloseException
-
-/**
- * The integration test will stop the mock Kubernetes server, which will cause a PrematureCloseException or ConnectException.
- * This needs to be handled and stop the loop in the Watcher code.
- */
-class TestCloseableWatcher : CloseableWatcher {
-    override fun stop(t: Throwable) =
-        t.cause is PrematureCloseException || t.cause?.cause is ConnectException
-}
 
 /**
  * A manual shutdown of the application will send either a SIGINT or a SIGTERM, which will cause a InterruptedException.

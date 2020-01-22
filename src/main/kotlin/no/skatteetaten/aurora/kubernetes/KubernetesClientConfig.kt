@@ -54,11 +54,6 @@ class KubernetesClientConfig(
     ) = KubernetesWatcher(websocketClient, closeableWatcher)
 
     @Bean
-    @Profile("test")
-    fun testCloseableWatcher() = TestCloseableWatcher()
-
-    @Bean
-    @Profile("!test")
     fun kubernetesCloseableWatcher() = KubernetesCloseableWatcher()
 
     @Lazy(true)
