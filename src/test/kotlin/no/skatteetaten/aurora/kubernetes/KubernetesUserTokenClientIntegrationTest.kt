@@ -119,7 +119,7 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get pods`() {
         runBlocking {
             val pods: PodList = kubernetesClient.getList(newPod {
-                metadata = newObjectMeta {
+                metadata {
                     namespace = NAMESPACE
                 }
             })
