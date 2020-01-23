@@ -25,7 +25,7 @@ val dc = kubernetesClient.get(newDeploymentConfig {
 ```kotlin
 val pods: PodList = kubernetesClient.getList(newPod {
     metadata {
-        namespace = NAMESPACE
+        namespace = ""
     }
 })
 ``` 
@@ -36,7 +36,7 @@ val pods: PodList = kubernetesClient.getList(newPod {
 val s = newSelfSubjectAccessReview {
     spec {
         resourceAttributes {
-            namespace = NAMESPACE
+            namespace = ""
             verb = "update"
             resource = "deploymentconfigs"
         }
@@ -51,8 +51,8 @@ val selfSubjectAccessView = kubernetesClient.post(s)
 val ad: ApplicationDeployment =
 kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
     metadata {
-        namespace = NAMESPACE
-        name = NAME
+        namespace = ""
+        name = ""
     }
 })
 ```
