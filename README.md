@@ -12,15 +12,12 @@ For a complete list of examples look at the `KubernetesClient` integration tests
 ### Get a resource 
 
 ```kotlin
- runBlocking {
-    val dc = kubernetesClient.get(newDeploymentConfig {
-        metadata {
-            namespace = ""
-            name = ""
-        }
-    })
-    ...
-}
+val dc = kubernetesClient.get(newDeploymentConfig {
+    metadata {
+        namespace = ""
+        name = ""
+    }
+})
 ```
 
 ### Get a resource list
