@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.spring") version "1.3.61"
     id("org.jlleitschuh.gradle.ktlint") version "9.1.1"
     id("org.sonarqube") version "2.8"
-    id("org.springframework.boot") version "2.2.3.RELEASE"
+    id("org.springframework.boot") version "2.2.4.RELEASE"
     id("org.asciidoctor.convert") version "2.3.0"
 
     id("com.gorylenko.gradle-git-properties") version "2.2.0"
@@ -20,7 +20,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.3.3")
     implementation("com.fkorotkov:kubernetes-dsl:3.0")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("io.projectreactor.addons:reactor-extra:3.3.1.RELEASE")
+    implementation("io.projectreactor.addons:reactor-extra:3.3.2.RELEASE")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.5.2")
