@@ -9,6 +9,9 @@ It is using `WebClient` from Spring Webflux as the http client and has support f
 
 For a complete list of examples look at the `KubernetesClient` integration tests, `KubernetesUserTokenClientIntegrationTest`.
 
+Add ` @TargetClient(ClientTypes.SERVICE_ACCOUNT)` to the place where the instance is injected to get the `KubernetesClient` configured with service account token.
+Or `@TargetClient(ClientTypes.USER_TOKEN)` to provide a `TokenFetcher` that gets the user token.
+
 ### Get a resource 
 
 ```kotlin
