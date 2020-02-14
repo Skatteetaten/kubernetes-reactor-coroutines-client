@@ -49,6 +49,15 @@ class KubernetesUserTokenClientIntegrationTest {
     }
 
     @Test
+    fun `Get projects with label`() {
+        runBlocking {
+            val projects: ProjectList = kubernetesClient.getList(newProject { metadata { labels = newLabel("removeAfter") }})
+
+            assertThat(projects).isNotNull()
+        }
+    }
+
+    @Test
     fun `Get routes`() {
         runBlocking {
             val routes = kubernetesClient.getList(newRoute { metadata { namespace = NAMESPACE } })

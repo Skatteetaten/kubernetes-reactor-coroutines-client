@@ -26,9 +26,9 @@ class KubernetesWatcherTest {
 
     private val kubernetes = MockWebServer()
     private val kubernetesListener = object : WebSocketListener() {
-        override fun onOpen(ws: WebSocket, response: Response) {
+        override fun onOpen(webSocket: WebSocket, response: Response) {
             val json = """{ "type" : "MY_EVENT" }"""
-            ws.send(json)
+            webSocket.send(json)
         }
     }
 

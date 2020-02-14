@@ -79,18 +79,12 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .awaitBody()
     }
 
-    suspend inline fun <reified Kind : HasMetadata, reified T : Any> getResource(
-        resource: Kind,
-        labels: Map<String, String> = emptyMap()
-    ): T {
-        return webClient.get().kubernetesResource(resource, labels)
+    suspend inline fun <reified Kind : HasMetadata, reified T : Any> getResource(resource: Kind): T {
+        return webClient.get().kubernetesResource(resource)
     }
 
-    suspend inline fun <reified Kind : HasMetadata> get(
-        resource: Kind,
-        labels: Map<String, String> = emptyMap()
-    ): Kind {
-        return getResource(resource, labels)
+    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
+        return getResource(resource)
     }
 
     suspend inline fun <reified Kind : HasMetadata, reified ListKind : KubernetesResourceList<Kind>> getList(resource: Kind): ListKind {
@@ -125,15 +119,21 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
     suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
-        resource: Kind,
-        labels: Map<String, String> = emptyMap()
+        resource: Kind
     ): T {
-        val spec = if (labels.isEmpty()) {
+        val labels = resource.metadata?.labels
+        val spec = if (labels.isNullOrEmpty()) {
             this.uri(resource.uri(), resource.uriVariables())
         } else {
             this.uri { builder ->
                 builder.path(resource.uri())
-                    .queryParam("labelSelector", labels.map { "${it.key}=${it.value}" }.joinToString(","))
+                    .queryParam("labelSelector", labels.map {
+                        if (it.value.isNullOrEmpty()) {
+                            it.key
+                        } else {
+                            "${it.key}=${it.value}"
+                        }
+                    }.joinToString(","))
                     .build(resource.uriVariables())
             }
         }
@@ -174,3 +174,6 @@ fun HasMetadata.uri(): String {
 }
 
 fun newCurrentUser() = newUser { metadata { name = "~" } }
+
+fun newLabel(key: String) = mapOf(key to "")
+fun newLabel(key: String, value: String) = mapOf(key to value)
