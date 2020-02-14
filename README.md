@@ -33,6 +33,16 @@ val pods: PodList = kubernetesClient.getList(newPod {
 })
 ``` 
 
+### Get a resource list with label
+
+```kotlin
+val projects: ProjectList = kubernetesClient.getList(newProject {
+    metadata {
+        labels = newLabel("removeAfter") 
+    }
+})
+```
+
 ### Create/Post a resource
 
 ```kotlin
