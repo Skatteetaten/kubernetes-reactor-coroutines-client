@@ -58,6 +58,17 @@ val s = newSelfSubjectAccessReview {
 val selfSubjectAccessView = kubernetesClient.post(s)
 ```
 
+### Delete a resources
+```kotlin
+val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+    metadata {
+        name = "k82814-gobo"
+        namespace = NAMESPACE_DEV
+    }
+})
+deleted.success()
+```
+
 ### Custom resource definitions
 
 ```kotlin

@@ -2,6 +2,7 @@ package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
@@ -220,6 +221,22 @@ class KubernetesUserTokenClientIntegrationTest {
         runBlocking {
             val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE_DEV, "", 2)
             assertThat(s).isNotNull()
+        }
+    }
+
+    @Disabled("add name before running test")
+    @Test
+    fun  `Delete application deployment`() {
+        runBlocking {
+            val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+                metadata {
+                    name = ""
+                    namespace = NAMESPACE_DEV
+                }
+            })
+
+            assertThat(deleted).isNotNull()
+            assertThat(deleted.success()).isTrue()
         }
     }
 }

@@ -1,5 +1,6 @@
 package no.skatteetaten.aurora.kubernetes
 
+import com.fkorotkov.kubernetes.newStatus
 import com.fkorotkov.kubernetes.v1.metadata
 import com.fkorotkov.kubernetes.v1.newScale
 import com.fkorotkov.kubernetes.v1.spec
@@ -8,6 +9,7 @@ import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
+import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import org.springframework.http.HttpHeaders
@@ -103,8 +105,16 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return webClient.put().kubernetesResource(resource, body)
     }
 
-    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind): Kind {
-        return webClient.delete().kubernetesResource(resource)
+    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind): Status {
+        return try {
+            webClient.delete().kubernetesResource(resource)
+        } catch (t: Throwable) {
+            return newStatus {
+                status = "Failed"
+                message =
+                    "Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${t.message}"
+            }
+        }
     }
 
     suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
@@ -178,6 +188,8 @@ fun HasMetadata.uri(): String {
         } ?: "$contextRoot/${this.apiVersion}/{kind}/{name}"
     }
 }
+
+fun Status.success() = this.status.toLowerCase() == "success"
 
 fun newCurrentUser() = newUser { metadata { name = "~" } }
 
