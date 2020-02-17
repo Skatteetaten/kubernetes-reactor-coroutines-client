@@ -189,7 +189,7 @@ fun HasMetadata.uri(): String {
     }
 }
 
-fun Status.success() = this.status.toLowerCase() == "success"
+fun Status.success() = this.status?.toLowerCase() == "success"
 
 fun newCurrentUser() = newUser { metadata { name = "~" } }
 
