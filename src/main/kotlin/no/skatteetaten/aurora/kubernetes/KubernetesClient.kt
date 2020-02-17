@@ -1,14 +1,14 @@
 package no.skatteetaten.aurora.kubernetes
 
-import com.fkorotkov.kubernetes.extensions.metadata
-import com.fkorotkov.kubernetes.extensions.newScale
-import com.fkorotkov.kubernetes.extensions.spec
+import com.fkorotkov.kubernetes.v1.metadata
+import com.fkorotkov.kubernetes.v1.newScale
+import com.fkorotkov.kubernetes.v1.spec
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
-import io.fabric8.kubernetes.api.model.extensions.Scale
+import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -153,9 +153,15 @@ interface TokenFetcher {
 
 fun HasMetadata.uriVariables() = mapOf(
     "namespace" to this.metadata?.namespace,
-    "kind" to "${this.kind.toLowerCase()}s",
+    "kind" to "${this.kind.toLowerCase()}".plurlize(),
     "name" to this.metadata?.name
 )
+
+fun String.plurlize() = if (this.endsWith("s")) {
+    "${this}es"
+} else {
+    "${this}s"
+}
 
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
