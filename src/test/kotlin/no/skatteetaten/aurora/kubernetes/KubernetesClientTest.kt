@@ -3,12 +3,26 @@ package no.skatteetaten.aurora.kubernetes
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
+import com.fkorotkov.kubernetes.extensions.newIngress
 import com.fkorotkov.kubernetes.newObjectMeta
 import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.openshift.newDeploymentConfig
 import org.junit.jupiter.api.Test
 
 class KubernetesClientTest {
+
+    @Test
+    fun `Build kubernetes uri with apiVersion and namespace for ingress`() {
+        val ingress = newIngress {
+            metadata = newObjectMeta {
+                namespace = "aurora"
+                name = "boober"
+            }
+        }
+
+        assertThat(ingress.uri()).isEqualTo("/apis/extensions/v1beta1/namespaces/{namespace}/{kind}/{name}")
+        assertThat(ingress.uriVariables()["kind"]).isEqualTo("ingresses")
+    }
 
     @Test
     fun `Build kubernetes uri with apiVersion and namespace`() {
@@ -20,6 +34,8 @@ class KubernetesClientTest {
         }
 
         assertThat(dc.uri()).isEqualTo("/apis/apps.openshift.io/v1/namespaces/{namespace}/{kind}/{name}")
+        assertThat(dc.uriVariables()["kind"]).isEqualTo("deploymentconfigs")
+
     }
 
     @Test
