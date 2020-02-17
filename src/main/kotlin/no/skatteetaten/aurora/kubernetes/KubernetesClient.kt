@@ -153,7 +153,7 @@ interface TokenFetcher {
 
 fun HasMetadata.uriVariables() = mapOf(
     "namespace" to this.metadata?.namespace,
-    "kind" to "${this.kind.toLowerCase()}".plurlize(),
+    "kind" to this.kind.toLowerCase().plurlize(),
     "name" to this.metadata?.name
 )
 
