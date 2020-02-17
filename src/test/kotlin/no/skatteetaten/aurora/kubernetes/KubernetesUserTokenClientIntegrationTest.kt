@@ -2,6 +2,7 @@ package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
 import assertk.assertions.isNotNull
+import com.fasterxml.jackson.databind.JsonNode
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
@@ -220,6 +221,26 @@ class KubernetesUserTokenClientIntegrationTest {
         runBlocking {
             val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE_DEV, "", 2)
             assertThat(s).isNotNull()
+        }
+    }
+
+
+
+    @Disabled("add name")
+    @Test
+    fun `proxy pod`() {
+        runBlocking {
+            val result: JsonNode = kubernetesClient.proxyGet(resource = newPod {
+                metadata = newObjectMeta {
+                    namespace = NAMESPACE_DEV
+                    name = ""
+                }
+            },
+                port = 8081,
+                path ="actuator")
+
+
+            assertThat(result).isNotNull()
         }
     }
 }

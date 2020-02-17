@@ -1,5 +1,7 @@
 package no.skatteetaten.aurora.kubernetes
 
+import com.fkorotkov.kubernetes.newObjectMeta
+import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.kubernetes.v1.metadata
 import com.fkorotkov.kubernetes.v1.newScale
 import com.fkorotkov.kubernetes.v1.spec
@@ -8,6 +10,7 @@ import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import org.springframework.http.HttpHeaders
@@ -83,6 +86,37 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return webClient.get().kubernetesResource(resource)
     }
 
+
+    suspend inline fun <reified T : Any> proxyGet2(name:String, namespace:String, port: Int, path: String): T {
+
+        val resource = newPod {
+            metadata = newObjectMeta {
+                this.namespace = namespace
+                this.name = name
+            }
+        }
+
+        val path = if(path.startsWith("/")) path else "/$path"
+
+        return webClient.get().kubernetesResource(
+            resource, uriSuffix = ":{port}/proxy{path}",
+            additionalUriVariables = mapOf(
+                "port" to port.toString(),
+                "path" to path
+            )
+        )
+    }
+
+    suspend inline fun <reified T : Any> proxyGet(resource: Pod, port: Int, path: String): T {
+        return webClient.get().kubernetesResource(
+            resource, uriSuffix = ":{port}/proxy{path}",
+            additionalUriVariables = mapOf(
+                "port" to port.toString(),
+                "path" to if(path.startsWith("/")) path else "/$path"
+            )
+        )
+    }
+
     suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
         return getResource(resource)
     }
@@ -119,14 +153,16 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
     suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
-        resource: Kind
+        resource: Kind,
+        uriSuffix: String = "",
+        additionalUriVariables: Map<String, String> = emptyMap()
     ): T {
         val labels = resource.metadata?.labels
         val spec = if (labels.isNullOrEmpty()) {
-            this.uri(resource.uri(), resource.uriVariables())
+            this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
         } else {
             this.uri { builder ->
-                builder.path(resource.uri())
+                builder.path("${resource.uri()}$uriSuffix")
                     .queryParam("labelSelector", labels.map {
                         if (it.value.isNullOrEmpty()) {
                             it.key
@@ -134,7 +170,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                             "${it.key}=${it.value}"
                         }
                     }.joinToString(","))
-                    .build(resource.uriVariables())
+                    .build(resource.uriVariables() + additionalUriVariables)
             }
         }
 
