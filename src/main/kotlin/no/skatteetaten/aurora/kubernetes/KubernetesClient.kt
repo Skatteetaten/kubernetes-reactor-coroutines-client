@@ -86,7 +86,6 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return webClient.get().kubernetesResource(resource)
     }
 
-
     suspend inline fun <reified T : Any> proxyGetPod(name: String, namespace: String, port: Int, path: String): T {
 
         val pod = newPod {
