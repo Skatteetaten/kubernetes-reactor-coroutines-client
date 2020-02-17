@@ -16,6 +16,7 @@ import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newImageStreamTag
 import com.fkorotkov.openshift.newProject
 import com.fkorotkov.openshift.newRoute
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.ReplicationControllerList
 import io.fabric8.kubernetes.api.model.ServiceList
@@ -226,18 +227,21 @@ class KubernetesUserTokenClientIntegrationTest {
 
 
 
-    @Disabled("add name")
     @Test
     fun `proxy pod`() {
         runBlocking {
-            val result: JsonNode = kubernetesClient.proxyGet(resource = newPod {
-                metadata = newObjectMeta {
-                    namespace = NAMESPACE_DEV
-                    name = ""
+            val pod: Pod = kubernetesClient.getList(newPod {
+                metadata {
+                    namespace = NAMESPACE
+                    labels = mapOf("app" to NAME)
                 }
-            },
+            }).items.first()
+
+            val result: JsonNode = kubernetesClient.proxyGet(
+                pod = pod,
                 port = 8081,
-                path ="actuator")
+                path = "actuator"
+            )
 
 
             assertThat(result).isNotNull()
