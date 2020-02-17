@@ -87,7 +87,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
 
-    suspend inline fun <reified T : Any> proxyGet2(name:String, namespace:String, port: Int, path: String): T {
+    suspend inline fun <reified T : Any> proxyGetPod(name: String, namespace: String, port: Int, path: String): T {
 
         val pod = newPod {
             metadata = newObjectMeta {
@@ -95,17 +95,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                 this.name = name
             }
         }
-
-        val path = if(path.startsWith("/")) path else "/$path"
-
-        return webClient.get().kubernetesResource(
-            resource = pod,
-            uriSuffix = ":{port}/proxy{path}",
-            additionalUriVariables = mapOf(
-                "port" to port.toString(),
-                "path" to path
-            )
-        )
+        return proxyGet(pod, port, path)
     }
 
     suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
