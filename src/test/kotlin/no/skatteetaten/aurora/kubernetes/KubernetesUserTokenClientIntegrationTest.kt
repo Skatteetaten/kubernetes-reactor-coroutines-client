@@ -7,6 +7,7 @@ import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
 import com.fkorotkov.kubernetes.metadata
+import com.fkorotkov.kubernetes.newDeleteOptions
 import com.fkorotkov.kubernetes.newObjectMeta
 import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.kubernetes.newReplicationController
@@ -233,6 +234,8 @@ class KubernetesUserTokenClientIntegrationTest {
                     name = ""
                     namespace = NAMESPACE_DEV
                 }
+            }, newDeleteOptions {
+                propagationPolicy = "Background"
             })
 
             assertThat(deleted).isNotNull()

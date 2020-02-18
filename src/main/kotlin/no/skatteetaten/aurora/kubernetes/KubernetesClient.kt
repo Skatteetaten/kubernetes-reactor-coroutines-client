@@ -7,12 +7,14 @@ import com.fkorotkov.kubernetes.v1.spec
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
+import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
@@ -105,9 +107,11 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return webClient.put().kubernetesResource(resource, body)
     }
 
-    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind): Status {
+    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Status {
         return try {
-            webClient.delete().kubernetesResource(resource)
+            options?.let {
+                webClient.method(HttpMethod.DELETE).kubernetesResource<Kind, Status>(resource, it)
+            } ?: webClient.delete().kubernetesResource(resource)
         } catch (t: Throwable) {
             return newStatus {
                 status = "Failed"
@@ -189,7 +193,7 @@ fun HasMetadata.uri(): String {
     }
 }
 
-fun Status.success() = this.status?.toLowerCase() == "success"
+fun Status.success() = this.status?.let { it.toLowerCase() == "success" } ?: true
 
 fun newCurrentUser() = newUser { metadata { name = "~" } }
 
