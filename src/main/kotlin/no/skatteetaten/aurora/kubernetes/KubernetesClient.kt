@@ -112,7 +112,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Boolean {
         return try {
             options?.let {
-                webClient.method(HttpMethod.DELETE).kubernetesResource<Kind, Status>(resource, it)
+                webClient.method(HttpMethod.DELETE).kubernetesResource<Kind, Any>(resource, it)
             } ?: webClient.delete().kubernetesResource(resource)
             true
         } catch (t: Throwable) {
