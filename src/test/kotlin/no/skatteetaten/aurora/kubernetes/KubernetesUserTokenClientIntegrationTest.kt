@@ -238,8 +238,7 @@ class KubernetesUserTokenClientIntegrationTest {
                 propagationPolicy = "Background"
             })
 
-            assertThat(deleted).isNotNull()
-            assertThat(deleted.success()).isTrue()
+            assertThat(deleted).isTrue()
         }
     }
 }

@@ -59,16 +59,17 @@ class KubernetesClientConfig(
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
-    fun kubernetesClientServiceAccount(webClient: WebClient) =
+    fun kubernetesClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
         KubernetesClient.create(webClient, File(tokenLocation).readText())
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
-    fun kubernetesClientUserToken(webClient: WebClient, tokenFetcher: TokenFetcher) =
+    fun kubernetesClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
         KubernetesClient.create(webClient, tokenFetcher)
 
+    @Qualifier("kubernetesClientWebClient")
     @Bean
     fun webClient(
         builder: WebClient.Builder,

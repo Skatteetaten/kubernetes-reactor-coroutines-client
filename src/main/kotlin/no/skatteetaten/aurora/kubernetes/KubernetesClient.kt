@@ -1,6 +1,5 @@
 package no.skatteetaten.aurora.kubernetes
 
-import com.fkorotkov.kubernetes.newStatus
 import com.fkorotkov.kubernetes.v1.metadata
 import com.fkorotkov.kubernetes.v1.newScale
 import com.fkorotkov.kubernetes.v1.spec
@@ -13,10 +12,13 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
+import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBody
 
 class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher) {
@@ -107,16 +109,20 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return webClient.put().kubernetesResource(resource, body)
     }
 
-    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Status {
+    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Boolean {
         return try {
             options?.let {
                 webClient.method(HttpMethod.DELETE).kubernetesResource<Kind, Status>(resource, it)
             } ?: webClient.delete().kubernetesResource(resource)
+            true
         } catch (t: Throwable) {
-            return newStatus {
-                status = "Failed"
-                message =
-                    "Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${t.message}"
+            val logger = KotlinLogging.logger {}
+            if (t is WebClientResponseException && t.statusCode == HttpStatus.NOT_FOUND) {
+                logger.debug("Resource not found, ${resource.metadata.namespace} ${resource.metadata.name}. ${t.message}")
+                false
+            } else {
+                logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${t.message}")
+                throw t
             }
         }
     }
@@ -192,8 +198,6 @@ fun HasMetadata.uri(): String {
         } ?: "$contextRoot/${this.apiVersion}/{kind}/{name}"
     }
 }
-
-fun Status.success() = this.status?.let { it.toLowerCase() == "success" } ?: true
 
 fun newCurrentUser() = newUser { metadata { name = "~" } }
 
