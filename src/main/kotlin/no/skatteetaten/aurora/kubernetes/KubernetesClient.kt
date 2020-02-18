@@ -20,13 +20,12 @@ import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
 import java.time.Duration
 
-private val logger= KotlinLogging.logger{}
+private val logger = KotlinLogging.logger {}
 
 class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher) {
 
@@ -38,6 +37,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         })
     }
 
+    //TODO: check if this is the correct class
     suspend fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Scale {
         val dc = newDeploymentConfig {
             metadata {
@@ -60,9 +60,8 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .put()
             .uri("${dc.uri()}/scale", dc.uriVariables())
             .body(BodyInserters.fromValue(scale))
-            .bearerToken(tokenFetcher.token())
-            .retrieve()
-            .awaitBody()
+            .perform<Scale>()
+            .awaitSingle()
     }
 
     suspend fun rolloutDeploymentConfig(namespace: String, name: String): DeploymentConfig {
@@ -87,15 +86,28 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                     )
                 )
             )
-            .bearerToken(tokenFetcher.token())
-            .retrieve()
-            .awaitBody()
+            .perform<DeploymentConfig>()
+            .awaitSingle()
+    }
+
+    inline fun <reified Kind : HasMetadata> getMono(resource: Kind): Mono<Kind> {
+        return webClient
+            .get()
+            .kubernetesUri(resource)
+            .perform()
     }
 
 
+    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform() =
+        this.bearerToken(tokenFetcher.token())
+            .retrieve()
+            .bodyToMono<T>()
+            .notFoundAsEmpty()
+            .retryWithLog(3L, 100L, 1000L)
+
 
     suspend inline fun <reified Kind : HasMetadata> getResource(resource: Kind): Kind {
-        return webClient.get().kubernetesResource<Kind, Kind>(resource).awaitSingle()
+        return getMono(resource).awaitSingle()
     }
 
     suspend inline fun <reified T : Any> proxyGetPod(name: String, namespace: String, port: Int, path: String): T {
@@ -110,18 +122,25 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
     suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
-        return webClient.get().kubernetesResource<Pod, T>(
-            resource = pod,
-            uriSuffix = ":{port}/proxy{path}",
-            additionalUriVariables = mapOf(
-                "port" to port.toString(),
-                "path" to if (path.startsWith("/")) path else "/$path"
+        return webClient.get()
+            .kubernetesUri(
+                resource = pod,
+                uriSuffix = ":{port}/proxy{path}",
+                additionalUriVariables = mapOf(
+                    "port" to port.toString(),
+                    "path" to if (path.startsWith("/")) path else "/$path"
+                ),
+                labels = emptyMap()
             )
-        ).awaitSingle()
+            .perform<T>()
+            .awaitSingle()
     }
 
     suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? {
-        return webClient.get().kubernetesResource<Kind, Kind>(resource).notFoundAsEmpty().awaitFirstOrNull()
+        return webClient.get()
+            .kubernetesUri(resource)
+            .perform<Kind>()
+            .awaitFirstOrNull()
     }
 
 
@@ -129,8 +148,12 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return getResource(resource)
     }
 
+    //TODO: if the resource that we get in here has a name the wrong url will be generated
     inline fun <reified Kind : HasMetadata> getListReactive(resource: Kind): Mono<List<Kind>> {
-        return webClient.get().kubernetesResource<Kind, KubernetesResourceList<Kind>>(resource) .map { it.items }
+        return webClient.get()
+            .kubernetesUri(resource)
+            .perform<KubernetesResourceList<Kind>>()
+            .map{ it.items}
     }
 
     suspend inline fun <reified Kind : HasMetadata> getList(resource: Kind): List<Kind> {
@@ -138,7 +161,10 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
     suspend inline fun <reified Kind : HasMetadata> postResource(resource: Kind, body: Any = resource): Kind {
-        return webClient.post().kubernetesResource(resource, body)
+        return webClient.post()
+            .kubernetesBodyUri(resource, body)
+            .perform<Kind>()
+            .awaitSingle()
     }
 
     suspend inline fun <reified Kind : HasMetadata> post(body: Kind): Kind {
@@ -146,49 +172,49 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
     suspend inline fun <reified Kind : HasMetadata> put(resource: Kind, body: Any = resource): Kind {
-        return webClient.put().kubernetesResource(resource, body)
+        return webClient.put()
+            .kubernetesBodyUri(resource, body)
+            .perform<Kind>()
+            .awaitSingle()
     }
 
     suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind): Kind {
-        return webClient.delete().kubernetesResource<Kind, Kind>(resource).awaitSingle()
+        return webClient.delete()
+            .kubernetesUri(resource)
+            .perform<Kind>()
+            .awaitSingle()
     }
 
-    suspend inline fun <reified Kind : HasMetadata, reified T : Any> WebClient.RequestBodyUriSpec.kubernetesResource(
+    inline fun <reified Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
         resource: Kind,
-        body: Any
-    ): T {
-        return this.uri(resource.uri(), resource.uriVariables())
+        body: Any,
+        uriSuffix: String = ""
+    ): WebClient.RequestHeadersSpec<*> {
+        return this.uri(resource.uri() + uriSuffix, resource.uriVariables())
             .body(BodyInserters.fromValue(body))
-            .bearerToken(tokenFetcher.token())
-            .retrieve()
-            .awaitBody()
     }
 
-    inline fun <Kind : HasMetadata, reified T: Any> WebClient.RequestHeadersUriSpec<*>.kubernetesResource(
+   fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
         resource: Kind,
         uriSuffix: String = "",
-        additionalUriVariables: Map<String, String> = emptyMap()
-    ): Mono<T> {
-        val labels = resource.metadata?.labels
-        val spec = if (labels.isNullOrEmpty()) {
-            this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
-        } else {
-            this.uri { builder ->
-                builder.path("${resource.uri()}$uriSuffix")
-                    .queryParam("labelSelector", labels.map {
-                        if (it.value.isNullOrEmpty()) {
-                            it.key
-                        } else {
-                            "${it.key}=${it.value}"
-                        }
-                    }.joinToString(","))
-                    .build(resource.uriVariables() + additionalUriVariables)
-            }
+        additionalUriVariables: Map<String, String> = emptyMap(),
+        labels: Map<String, String?> = resource.metadata?.labels ?: emptyMap()
+    ): WebClient.RequestHeadersSpec<*> {
+        if (labels.isNullOrEmpty()) {
+            return this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
         }
-
-        return spec.bearerToken(tokenFetcher.token()).retrieve().bodyToMono()
+        return this.uri { builder ->
+            builder.path("${resource.uri()}$uriSuffix")
+                .queryParam("labelSelector", labels.map {
+                    if (it.value.isNullOrEmpty()) {
+                        it.key
+                    } else {
+                        "${it.key}=${it.value}"
+                    }
+                }.joinToString(","))
+                .build(resource.uriVariables() + additionalUriVariables)
+        }
     }
-
 
     fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
         token?.let {
@@ -243,20 +269,28 @@ fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
     }
 }
 
+fun <T> Mono<T>.retryWithLog(times: Long = 3, retryFirstInMs: Long, retryMaxInMs: Long): Mono<T> {
+    if (times == 0L) {
+        return this
+    }
 
-fun <T> Mono<T>.retryWithLog(retryFirstInMs: Long, retryMaxInMs: Long) =
-    this.retryWhen(Retry.onlyIf<Mono<T>> {
-        if (it.iteration() == 3L) {
-            logger.info {
+    return this.retryWhen(Retry.onlyIf<Mono<T>> {
+        it.exception() is WebClientResponseException && (it.exception() as WebClientResponseException).statusCode.is5xxServerError
+    }
+        .exponentialBackoff(Duration.ofMillis(retryFirstInMs), Duration.ofMillis(retryMaxInMs))
+        .retryMax(times)
+        .doOnRetry {
+            //TODO: Should we log differently?
+            logger.debug {
                 val e = it.exception()
-                val msg = "Retrying failed request, ${e.message}"
+                val msg = "Retrying failed request times=${it.iteration()}, ${e.message}"
                 if (e is WebClientResponseException) {
-                    "$msg, ${e.request?.method} ${e.request?.uri}"
+                    "$msg, method=${e.request?.method} uri=${e.request?.uri}"
                 } else {
                     msg
                 }
             }
         }
+    )
+}
 
-        it.exception() !is WebClientResponseException.Unauthorized
-    }.exponentialBackoff(Duration.ofMillis(retryFirstInMs), Duration.ofMillis(retryMaxInMs)).retryMax(3))
