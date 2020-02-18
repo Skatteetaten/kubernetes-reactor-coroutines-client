@@ -140,18 +140,7 @@ class KubernetesUserTokenClientIntegrationTest {
                 }
             })
 
-            /*
-            val pods2: List<Pod> = kubernetesClient.getList(newPod {
-                metadata {
-                    namespace = NAMESPACE
-                    name = pods.first().metadata.name
-                }
-            })
-
-             */
-
             assertThat(pods).isNotNull()
-            //assertThat(pods2).isNotNull()
         }
     }
 
