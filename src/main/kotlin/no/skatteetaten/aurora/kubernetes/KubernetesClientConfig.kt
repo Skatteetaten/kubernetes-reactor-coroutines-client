@@ -5,6 +5,8 @@ import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
+import no.skatteetaten.aurora.kubernetes.coroutines.KubernetesClient
+import no.skatteetaten.aurora.kubernetes.reactor.KubernetesClientReactor
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -59,15 +61,28 @@ class KubernetesClientConfig(
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
+    fun kubernetesClientReactorServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
+        KubernetesClientReactor(webClient, File(tokenLocation).readText())
+
+    @Lazy(true)
+    @Bean
+    @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     fun kubernetesClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
-        KubernetesClient.create(webClient, File(tokenLocation).readText())
+        KubernetesClient(webClient, File(tokenLocation).readText())
+
+    @Lazy(true)
+    @Bean
+    @Primary
+    @TargetClient(ClientTypes.USER_TOKEN)
+    fun kubernetesClientReactorUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
+        KubernetesClientReactor(webClient, tokenFetcher)
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
     fun kubernetesClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
-        KubernetesClient.create(webClient, tokenFetcher)
+        KubernetesClient(webClient, tokenFetcher)
 
     @Qualifier("kubernetesClientWebClient")
     @Bean

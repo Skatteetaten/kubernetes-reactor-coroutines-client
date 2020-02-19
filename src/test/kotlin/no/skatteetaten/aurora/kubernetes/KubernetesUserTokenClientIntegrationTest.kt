@@ -19,14 +19,11 @@ import com.fkorotkov.openshift.newImageStreamTag
 import com.fkorotkov.openshift.newProject
 import com.fkorotkov.openshift.newRoute
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.ReplicationController
-import io.fabric8.kubernetes.api.model.ReplicationControllerList
 import io.fabric8.kubernetes.api.model.Service
-import io.fabric8.kubernetes.api.model.ServiceList
 import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.api.model.ProjectList
 import kotlinx.coroutines.runBlocking
+import no.skatteetaten.aurora.kubernetes.coroutines.KubernetesClient
 import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
@@ -42,7 +39,8 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesClient.create(testWebClient(), kubernetesToken())
+    private val kubernetesClient =
+        KubernetesClient(testWebClient(), kubernetesToken())
 
     @Test
     fun `Get projects`() {
@@ -245,13 +243,13 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-   // @Disabled("add name before running test")
+    @Disabled("add name before running test")
     @Test
     fun `Delete application deployment`() {
         runBlocking {
             val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
                 metadata {
-                    name = "test"
+                    name = ""
                     namespace = NAMESPACE_DEV
                 }
             }, newDeleteOptions {
@@ -261,6 +259,4 @@ class KubernetesUserTokenClientIntegrationTest {
             assertThat(deleted).isTrue()
         }
     }
-
-
 }
