@@ -23,8 +23,7 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.internal.KubernetesDeserializer
-import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.api.model.Route
+import io.fabric8.openshift.api.model.*
 import kotlinx.coroutines.runBlocking
 import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
@@ -41,13 +40,14 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesClient.create(testWebClient(), kubernetesToken())
+    private val reactiveClient = KubernetesClient.create(testWebClient(), kubernetesToken())
+    private val kubernetesClient = KubernetesCoroutinesClient(reactiveClient)
 
     @Test
     fun `Get projects`() {
         runBlocking {
-            val projects: List<Project> = kubernetesClient.getList(newProject { })
-            val project = kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
+            val projects: List<Project> = kubernetesClient.getMany(newProject { })
+            val project: Project = kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
 
             assertThat(projects).isNotNull()
             assertThat(project).isNotNull()
@@ -58,7 +58,7 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get projects with label`() {
         runBlocking {
             val projects: List<Project> =
-                kubernetesClient.getList(newProject { metadata { labels = newLabel("removeAfter") } })
+                kubernetesClient.getMany(newProject { metadata { labels = newLabel("removeAfter") } })
 
             assertThat(projects).isNotNull()
         }
@@ -67,8 +67,8 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get routes`() {
         runBlocking {
-            val routes: List<Route> = kubernetesClient.getList(newRoute { metadata { namespace = NAMESPACE } })
-            val route = kubernetesClient.get(
+            val routes: List<Route> = kubernetesClient.getMany(newRoute { metadata { namespace = NAMESPACE } })
+            val route: Route = kubernetesClient.get(
                 newRoute {
                     metadata {
                         namespace = NAMESPACE
@@ -85,7 +85,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.get(newDeploymentConfig {
+            val dc: Service = kubernetesClient.get(newDeploymentConfig {
                 metadata {
                     namespace = NAMESPACE
                     name = NAME
@@ -111,7 +111,7 @@ class KubernetesUserTokenClientIntegrationTest {
         )
 
         runBlocking {
-            val ads: List<ApplicationDeployment> = kubernetesClient.getList(
+            val ads: List<ApplicationDeployment> = kubernetesClient.getMany(
                 ApplicationDeploymentStub(namespace = NAMESPACE)
             )
             assertThat(ads).isNotNull()
@@ -121,7 +121,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get services`() {
         runBlocking {
-            val services: List<Service> = kubernetesClient.getList(newService {
+            val services: List<Service> = kubernetesClient.getMany(newService {
                 metadata = newObjectMeta {
                     namespace = NAMESPACE
                 }
@@ -133,7 +133,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get pods`() {
         runBlocking {
-            val pods: List<Pod> = kubernetesClient.getList(newPod {
+            val pods: List<Pod> = kubernetesClient.getMany(newPod {
                 metadata {
                     namespace = NAMESPACE
                 }
@@ -146,13 +146,13 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get replication controllers`() {
         runBlocking {
-            val rcs: List<ReplicationController> = kubernetesClient.getList(newReplicationController {
+            val rcs: List<ReplicationController> = kubernetesClient.getMany(newReplicationController {
                 metadata {
                     namespace = NAMESPACE
                 }
             })
 
-            val rc = kubernetesClient.get(newReplicationController {
+            val rc: ReplicationController = kubernetesClient.get(newReplicationController {
                 metadata {
                     namespace = NAMESPACE
                     name = rcs.first().metadata.name
@@ -167,7 +167,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get image stream tag`() {
         runBlocking {
-            val ist = kubernetesClient.get(newImageStreamTag {
+            val ist : ImageStreamTag = kubernetesClient.get(newImageStreamTag {
                 metadata {
                     namespace = NAMESPACE
                     name = "$NAME:latest"
@@ -181,7 +181,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get user`() {
         runBlocking {
-            val u = kubernetesClient.get(newCurrentUser())
+            val u: User = kubernetesClient.get(newCurrentUser())
             assertThat(u).isNotNull()
         }
     }
@@ -206,7 +206,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `proxy pod`() {
         runBlocking {
-            val pod: Pod = kubernetesClient.getList<Pod, Pod>(newPod {
+            val pod: Pod = kubernetesClient.getMany<Pod, Pod>(newPod {
                 metadata {
                     namespace = NAMESPACE
                     labels = mapOf("app" to NAME)

@@ -21,6 +21,7 @@ import kotlinx.coroutines.reactive.awaitSingle
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
+import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -33,6 +34,45 @@ class ResourceNotFoundException(m: String) : RuntimeException(m)
 
 private val logger = KotlinLogging.logger {}
 
+class KubernetesCoroutinesClient(val client: KubernetesClient) {
+    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getOrNull(resource: Input): Output? =
+        client.get<Input, Output>(resource).awaitFirstOrNull()
+
+    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> get(resource: Input): Output {
+        return getOrNull(resource)
+            ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
+    }
+
+
+    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getMany(resource: Input): List<Output> {
+        return client.getList<Input, Output>(resource).awaitFirst()
+    }
+
+    suspend inline fun <reified Input : HasMetadata> post(resource: Input): Input =
+        client.post(resource).awaitFirst()
+
+
+    suspend inline fun <reified Input : HasMetadata> put(resource: Input): Input =
+        client.put(resource).awaitFirst()
+
+
+    suspend inline fun <reified Input : HasMetadata> delete(resource: Input, options: DeleteOptions? = null): Boolean =
+        client.delete(resource, options).awaitFirst()
+
+    suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
+        return client.proxyGet<T>(pod, port, path).awaitFirst()
+    }
+
+    suspend inline fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Scale {
+        return client.scaleDeploymentConfig(namespace, name, count).awaitFirst()
+    }
+
+    suspend fun rolloutDeploymentConfig(namespace: String, name: String): DeploymentConfig {
+        return client.rolloutDeploymentConfig(namespace, name).awaitFirst()
+    }
+
+}
+
 class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher) {
 
     companion object {
@@ -43,8 +83,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         })
     }
 
-    //TODO: check if this is the correct class
-    suspend fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Scale {
+    fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Mono<Scale> {
         val dc = newDeploymentConfig {
             metadata {
                 this.namespace = namespace
@@ -66,11 +105,10 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .put()
             .uri("${dc.uri()}/scale", dc.uriVariables())
             .body(BodyInserters.fromValue(scale))
-            .perform<Scale>()
-            .awaitSingle()
+            .perform()
     }
 
-    suspend fun rolloutDeploymentConfig(namespace: String, name: String): DeploymentConfig {
+    fun rolloutDeploymentConfig(namespace: String, name: String): Mono<DeploymentConfig> {
         val dc = newDeploymentConfig {
             metadata {
                 this.namespace = namespace
@@ -92,49 +130,11 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                     )
                 )
             )
-            .perform<DeploymentConfig>()
-            .awaitSingle()
+            .perform()
     }
 
-    /*
-     Get a single resource given a resource template.
 
-     The fields metadata.namespace and metadata.name are required. Labels in the resource are ignored for this operation
-
-     @param resource:Kind a KubernetesResrouces implementing HasMetadata
-     @return Mono<Kind>: A mono that can either be a result, empty (if the resource is not found) or an exception if it fails
-     */
-    inline fun <reified Kind : HasMetadata> getMono(resource: Kind): Mono<Kind> {
-        return webClient.get().kubernetesUri(resource).perform()
-    }
-
-    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
-        getMono(resource).awaitFirstOrNull()
-
-    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
-        return getOrNull(resource)
-            ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
-    }
-
-    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform() =
-        this.bearerToken(tokenFetcher.token())
-            .retrieve()
-            .bodyToMono<T>()
-            .notFoundAsEmpty()
-            .retryWithLog(3L, 100L, 1000L)
-
-    suspend inline fun <reified T : Any> proxyGetPod(name: String, namespace: String, port: Int, path: String): T {
-
-        val pod = newPod {
-            metadata = newObjectMeta {
-                this.namespace = namespace
-                this.name = name
-            }
-        }
-        return proxyGet(pod, port, path)
-    }
-
-    suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
+    inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): Mono<T> {
         return webClient.get()
             .kubernetesUri(
                 resource = pod,
@@ -144,41 +144,46 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                     "path" to if (path.startsWith("/")) path else "/$path"
                 )
             )
-            .perform<T>()
-            .awaitSingle()
+            .perform()
     }
 
-    //TODO: if the resource that we get in here has a name the wrong url will be generated
-    inline fun <reified Kind : HasMetadata, reified T : HasMetadata> getListMono(resource: Kind): Mono<List<T>> {
+    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> get(resource: Input): Mono<Output> {
+        return webClient.get().kubernetesUri(resource).perform()
+    }
+
+
+    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getList(resource: Input): Mono<List<Output>> {
         return webClient.get()
             .kubernetesListUri(resource)
-            .perform<KubernetesResourceList<T>>()
+            .perform<KubernetesResourceList<Output>>()
             .map { it.items }
     }
 
-    suspend inline fun <reified Kind : HasMetadata, reified T : HasMetadata> getList(resource: Kind): List<T> {
-        return getListMono<Kind, T>(resource).awaitSingle()
-    }
 
-    suspend inline fun <reified Kind : HasMetadata> postResource(resource: Kind, body: Any = resource): Kind {
+    inline fun <reified Kind : HasMetadata> post(resource: Kind, body: Any = resource): Mono<Kind> {
         return webClient.post()
             .kubernetesBodyUri(resource, body)
             .perform<Kind>()
-            .awaitSingle()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> post(body: Kind): Kind {
-        return postResource(resource = body, body = body)
-    }
-
-    suspend inline fun <reified Kind : HasMetadata> put(resource: Kind, body: Any = resource): Kind {
+    inline fun <reified Kind : HasMetadata> put(resource: Kind, body: Any = resource): Mono<Kind> {
         return webClient.put()
             .kubernetesBodyUri(resource, body)
-            .perform<Kind>()
-            .awaitSingle()
+            .perform()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Boolean {
+    inline fun <reified Kind : HasMetadata> deleteMany(resource: Kind, options: DeleteOptions? = null): Mono<Boolean> {
+        val request = options?.let {
+            webClient.method(HttpMethod.DELETE)
+                .kubernetesListBodyUri(resource, it)
+        } ?: webClient.delete().kubernetesUri(resource)
+        val response = request.perform<Any>()
+        return response
+            .map { true }
+            .or(Mono.just(false))
+    }
+
+    inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Mono<Boolean> {
         val request = options?.let {
             webClient.method(HttpMethod.DELETE)
                 .kubernetesBodyUri(resource, it)
@@ -187,10 +192,16 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return response
             .map { true }
             .or(Mono.just(false))
-            .awaitFirst()
     }
 
-    inline fun <reified Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
+    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform() =
+        this.bearerToken(tokenFetcher.token())
+            .retrieve()
+            .bodyToMono<T>()
+            .notFoundAsEmpty()
+            .retryWithLog(3L, 100L, 1000L)
+
+    fun <Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
         resource: Kind,
         body: Any,
         uriSuffix: String = ""
@@ -198,6 +209,43 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return this.uri(resource.uri() + uriSuffix, resource.uriVariables())
             .body(BodyInserters.fromValue(body))
     }
+
+    fun <Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesListBodyUri(
+        resource: Kind,
+        body: Any,
+        labels: Map<String, String?> = resource.metadata?.labels ?: emptyMap()
+    ): WebClient.RequestHeadersSpec<*> {
+
+        val metadata = if (resource.metadata == null) {
+            null
+        } else {
+            newObjectMeta {
+                namespace = resource.metadata?.namespace
+            }
+        }
+
+        val baseUri = createUrl(metadata, resource.apiVersion)
+        val urlVariables = resource.uriVariables()
+
+        val req = if (labels.isNullOrEmpty()) {
+            this.uri(baseUri, urlVariables)
+        } else {
+            this.uri { builder ->
+                builder.path(baseUri)
+                    .queryParam("labelSelector", labels.map {
+                        if (it.value.isNullOrEmpty()) {
+                            it.key
+                        } else {
+                            "${it.key}=${it.value}"
+                        }
+                    }.joinToString(","))
+                    .build(urlVariables)
+            }
+        }
+
+        return req.body(BodyInserters.fromValue(body))
+    }
+
 
     fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(
         resource: Kind,
@@ -278,12 +326,6 @@ fun String.plurlize() = if (this.endsWith("s")) {
 } else {
     "${this}s"
 }
-
-/*
- deleteMany/getMany : ignorere name, hvis namespace er satt, du vil ha med labels
- get/post/put/delete : ignorer labels
- */
-
 
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
