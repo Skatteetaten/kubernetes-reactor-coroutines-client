@@ -25,7 +25,7 @@ import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.internal.KubernetesDeserializer
 import io.fabric8.openshift.api.model.*
 import kotlinx.coroutines.runBlocking
-import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
+import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenQueryResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
@@ -47,7 +47,7 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get projects`() {
         runBlocking {
             val projects: List<Project> = kubernetesClient.getMany(newProject { })
-            val project= kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
+            val project = kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
 
             assertThat(projects).isNotNull()
             assertThat(project).isNotNull()
@@ -111,9 +111,12 @@ class KubernetesUserTokenClientIntegrationTest {
         )
 
         runBlocking {
-            val ads: List<ApplicationDeployment> = kubernetesClient.getManyWithQueryResource(
-                ApplicationDeploymentStub(namespace = NAMESPACE)
-            )
+            val ads = kubernetesClient.getMany(newApplicationDeployment {
+                metadata {
+                    this.namespace = namespace
+                }
+            })
+
             assertThat(ads).isNotNull()
         }
     }
@@ -245,7 +248,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment`() {
         runBlocking {
-            val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+            val deleted = kubernetesClient.delete(newSkatteetatenQueryResource<ApplicationDeployment> {
                 metadata {
                     name = ""
                     namespace = NAMESPACE_DEV

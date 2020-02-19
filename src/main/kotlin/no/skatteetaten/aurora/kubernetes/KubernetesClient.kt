@@ -19,6 +19,10 @@ import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import mu.KotlinLogging
+import no.skatteetaten.aurora.kubernetes.crd.QueryResource
+import no.skatteetaten.aurora.kubernetes.crd.SkatteetatenKubernetesResource
+import no.skatteetaten.aurora.kubernetes.crd.newQueryResource
+import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenQueryResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.BodyInserter
@@ -29,20 +33,25 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
 import java.time.Duration
+import kotlin.reflect.full.createInstance
 
 class ResourceNotFoundException(m: String) : RuntimeException(m)
 
 private val logger = KotlinLogging.logger {}
 
+
 class KubernetesCoroutinesClient(val client: KubernetesClient) {
+    /*
     suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getOrNullWithQueryResource(resource: Input): Output? =
         client.getWithQueryResource<Input, Output>(resource).awaitFirstOrNull()
+
 
     suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Output {
         return getOrNullWithQueryResource(resource)
             ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
     }
-    
+     */
+
     suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
         client.get(resource).awaitFirstOrNull()
 
@@ -53,9 +62,33 @@ class KubernetesCoroutinesClient(val client: KubernetesClient) {
         return client.getMany(resource).awaitFirst()
     }
 
-    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getManyWithQueryResource(resource: Input): List<Output> {
-        return client.getManyWithQueryResource<Input, Output>(resource).awaitFirst()
+
+    /*
+    suspend inline fun <reified Kind : HasMetadata> getMany(namespace: String): List<Kind> {
+        val apiVersion = Kind::class.createInstance().apiVersion
+        val query = object: HasMetadata {
+            override fun getMetadata() = newObjectMeta {
+                this.namespace = namespace
+            }
+            override fun getKind() = Kind::class.simpleName!!
+
+            override fun getApiVersion() = apiVersion
+
+            override fun setMetadata(p0: ObjectMeta?) {
+                throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
+            }
+
+            override fun setApiVersion(p0: String?) {
+                throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
+            }
+
+        }
+
+        return client.getManyWithQueryResource<HasMetadata, Kind>(query).awaitFirst()
     }
+*/
+
+
     suspend inline fun <reified Input : HasMetadata> post(resource: Input): Input =
         client.post(resource).awaitFirst()
 
@@ -180,14 +213,16 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
 
-    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Mono<Output> {
-        return webClient.get().kubernetesUri(resource).perform()
-    }
+
 
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
         return webClient.get().kubernetesUri(resource).perform()
     }
 
+    /*
+    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Mono<Output> {
+        return webClient.get().kubernetesUri(resource).perform()
+    }
 
     inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getManyWithQueryResource(resource: Input): Mono<List<Output>> {
         return webClient.get()
@@ -195,6 +230,8 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .perform<KubernetesResourceList<Output>>()
             .map { it.items }
     }
+
+     */
 
 
     inline fun <reified Kind : HasMetadata> getMany(resource: Kind): Mono<List<Kind>> {
