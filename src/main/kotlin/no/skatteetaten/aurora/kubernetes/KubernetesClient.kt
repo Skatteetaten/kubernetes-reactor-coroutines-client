@@ -25,6 +25,8 @@ import reactor.core.publisher.Mono
 import reactor.retry.Retry
 import java.time.Duration
 
+class ResourceNotFoundException(m: String) : RuntimeException(m)
+
 private val logger = KotlinLogging.logger {}
 
 class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher) {
@@ -90,13 +92,42 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .awaitSingle()
     }
 
+    /*
+     Get a single resource given a resource template.
+
+     The fields metadata.namespace and metadata.name are required. Labels in the resource are ignored for this operation
+
+     @param resource:Kind a KubernetesResrouces implementing HasMetadata
+     @return Mono<Kind>: A mono that can either be a result, empty (if the resource is not found) or an exception if it fails
+     */
     inline fun <reified Kind : HasMetadata> getMono(resource: Kind): Mono<Kind> {
-        return webClient
-            .get()
-            .kubernetesUri(resource)
-            .perform()
+        return webClient.get().kubernetesUri(resource, labels = emptyMap()).perform()
     }
 
+    /*
+     Get a single resource given a resource template.
+
+     The fields metadata.namespace and metadata.name are required. Labels in the resource are ignored for this operation
+
+     @param resource:Kind a KubernetesResrouces implementing HasMetadata
+     @return Kind?: Either the result or null, if an error occurs and Exception will be thrown
+     */
+    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
+        getMono(resource).awaitFirstOrNull()
+
+    /*
+     Get a single resource given a resource template.
+
+     The fields metadata.namespace and metadata.name are required. Labels in the resource are ignored for this operation
+
+     @param resource:Kind a KubernetesResrouces implementing HasMetadata
+     @return Kind: The result
+     @throws ResourceNotFoundException if the given resource was not found
+     */
+    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
+        return getOrNull(resource)
+            ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
+    }
 
     inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform() =
         this.bearerToken(tokenFetcher.token())
@@ -104,11 +135,6 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .bodyToMono<T>()
             .notFoundAsEmpty()
             .retryWithLog(3L, 100L, 1000L)
-
-
-    suspend inline fun <reified Kind : HasMetadata> getResource(resource: Kind): Kind {
-        return getMono(resource).awaitSingle()
-    }
 
     suspend inline fun <reified T : Any> proxyGetPod(name: String, namespace: String, port: Int, path: String): T {
 
@@ -136,17 +162,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .awaitSingle()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? {
-        return webClient.get()
-            .kubernetesUri(resource)
-            .perform<Kind>()
-            .awaitFirstOrNull()
-    }
 
-
-    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
-        return getResource(resource)
-    }
 
     //TODO: if the resource that we get in here has a name the wrong url will be generated
     inline fun <reified Kind : HasMetadata> getListReactive(resource: Kind): Mono<List<Kind>> {
@@ -227,6 +243,7 @@ interface TokenFetcher {
     fun token(): String
 }
 
+// TODO: This has some issues if namespace is empty or name is empty. We need to assert earlier in the functions
 fun HasMetadata.uriVariables() = mapOf(
     "namespace" to this.metadata?.namespace,
     "kind" to this.kind.toLowerCase().plurlize(),
