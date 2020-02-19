@@ -56,6 +56,21 @@ class KubernetesClientConfig(
     @Bean
     fun kubernetesCloseableWatcher() = KubernetesCloseableWatcher()
 
+
+    @Lazy(true)
+    @Bean
+    @TargetClient(ClientTypes.SERVICE_ACCOUNT)
+    fun kubernetesCoroutineClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
+        KubernetesCoroutinesClient(KubernetesClient.create(webClient, File(tokenLocation).readText()))
+
+    @Lazy(true)
+    @Bean
+    @Primary
+    @TargetClient(ClientTypes.USER_TOKEN)
+    fun kubernetesCoroutineClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
+        KubernetesCoroutinesClient(KubernetesClient.create(webClient, tokenFetcher))
+
+
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
