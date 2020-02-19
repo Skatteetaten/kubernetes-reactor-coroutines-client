@@ -2,11 +2,13 @@ package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
 import com.fkorotkov.kubernetes.metadata
+import com.fkorotkov.kubernetes.newDeleteOptions
 import com.fkorotkov.kubernetes.newObjectMeta
 import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.kubernetes.newReplicationController
@@ -56,7 +58,8 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get projects with label`() {
         runBlocking {
-            val projects: List<Project> = kubernetesClient.getList(newProject { metadata { labels = newLabel("removeAfter") }})
+            val projects: List<Project> =
+                kubernetesClient.getList(newProject { metadata { labels = newLabel("removeAfter") } })
 
             assertThat(projects).isNotNull()
         }
@@ -204,6 +207,26 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
+    @Test
+    fun `proxy pod`() {
+        runBlocking {
+            val pod: Pod = kubernetesClient.getList(newPod {
+                metadata {
+                    namespace = NAMESPACE
+                    labels = mapOf("app" to NAME)
+                }
+            }).first()
+
+            val result: JsonNode = kubernetesClient.proxyGet(
+                pod = pod,
+                port = 8081,
+                path = "actuator"
+            )
+
+            assertThat(result).isNotNull()
+        }
+    }
+
     @Disabled("add name before running test")
     @Test
     fun `Roll out deployment config`() {
@@ -222,26 +245,22 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-
-
+    @Disabled("add name before running test")
     @Test
-    fun `proxy pod`() {
+    fun `Delete application deployment`() {
         runBlocking {
-            val pod: Pod = kubernetesClient.getList(newPod {
+            val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
                 metadata {
-                    namespace = NAMESPACE
-                    labels = mapOf("app" to NAME)
+                    name = ""
+                    namespace = NAMESPACE_DEV
                 }
-            }).first()
+            }, newDeleteOptions {
+                propagationPolicy = "Background"
+            })
 
-            val result: JsonNode = kubernetesClient.proxyGet(
-                pod = pod,
-                port = 8081,
-                path = "actuator"
-            )
-
-
-            assertThat(result).isNotNull()
+            assertThat(deleted).isTrue()
         }
     }
+
+
 }

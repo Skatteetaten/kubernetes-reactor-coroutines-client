@@ -8,18 +8,20 @@ import com.fkorotkov.kubernetes.v1.spec
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
+import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
+import kotlinx.coroutines.reactive.awaitFirstOrElse
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
@@ -194,11 +196,18 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .awaitSingle()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind): Kind {
-        return webClient.delete()
-            .kubernetesUri(resource)
-            .perform<Kind>()
-            .awaitSingle()
+    suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Boolean {
+            val request=options?.let {
+                webClient.method(HttpMethod.DELETE)
+                    .kubernetesBodyUri(resource, it)
+            } ?: webClient.delete().kubernetesUri(resource)
+            val response=request.perform<Any>()
+            return response.map { true}
+                .doOnError {
+                    logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${t.message}")
+                }
+                .awaitFirstOrElse { false }
+
     }
 
     inline fun <reified Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(

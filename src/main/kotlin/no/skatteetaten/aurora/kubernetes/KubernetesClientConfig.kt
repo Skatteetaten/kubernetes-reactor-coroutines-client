@@ -69,6 +69,7 @@ class KubernetesClientConfig(
     fun kubernetesClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
         KubernetesClient.create(webClient, tokenFetcher)
 
+    @Qualifier("kubernetesClientWebClient")
     @Bean
     @Qualifier("kubernetesClientWebClient")
     fun kubernetesWebClient(
