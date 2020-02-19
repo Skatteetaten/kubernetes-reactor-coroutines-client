@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.openshift.api.model.DeploymentConfigSpec;
+import no.skatteetaten.aurora.kubernetes.ApplicationDeploymentSpec;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "apiVersion", "kind", "metadata", "spec", "status" })
@@ -25,7 +26,7 @@ public class ApplicationDeployment implements HasMetadata {
     @JsonProperty("metadata")
     private ObjectMeta metadata;
     @JsonProperty("spec")
-    private DeploymentConfigSpec spec;
+    private ApplicationDeploymentSpec spec;
 
     @Override
     public String getApiVersion() {
@@ -56,11 +57,11 @@ public class ApplicationDeployment implements HasMetadata {
         this.metadata = metadata;
     }
 
-    public DeploymentConfigSpec getSpec() {
+    public ApplicationDeploymentSpec getSpec() {
         return spec;
     }
 
-    public void setSpec(DeploymentConfigSpec spec) {
+    public void setSpec(ApplicationDeploymentSpec spec) {
         this.spec = spec;
     }
 
