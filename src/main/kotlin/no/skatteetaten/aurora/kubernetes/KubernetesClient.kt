@@ -222,6 +222,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         } ?: this
 }
 
+@FunctionalInterface
 interface TokenFetcher {
     fun token(): String
 }
