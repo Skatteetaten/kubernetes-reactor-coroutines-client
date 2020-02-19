@@ -108,26 +108,9 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         return webClient.get().kubernetesUri(resource).perform()
     }
 
-    /*
-     Get a single resource given a resource template.
-
-     The fields metadata.namespace and metadata.name are required. Labels in the resource are ignored for this operation
-
-     @param resource:Kind a KubernetesResrouces implementing HasMetadata
-     @return Kind?: Either the result or null, if an error occurs and Exception will be thrown
-     */
     suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
         getMono(resource).awaitFirstOrNull()
 
-    /*
-     Get a single resource given a resource template.
-
-     The fields metadata.namespace and metadata.name are required. Labels in the resource are ignored for this operation
-
-     @param resource:Kind a KubernetesResrouces implementing HasMetadata
-     @return Kind: The result
-     @throws ResourceNotFoundException if the given resource was not found
-     */
     suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind {
         return getOrNull(resource)
             ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
@@ -201,8 +184,9 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                 .kubernetesBodyUri(resource, it)
         } ?: webClient.delete().kubernetesUri(resource)
         val response = request.perform<Any>()
-        return response.map { true }
-            .or(Mono.empty())
+        return response
+            .map { true }
+            .or(Mono.just(false))
             .awaitFirst()
     }
 
