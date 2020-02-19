@@ -18,15 +18,14 @@ import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newImageStreamTag
 import com.fkorotkov.openshift.newProject
 import com.fkorotkov.openshift.newRoute
+import io.fabric8.kubernetes.api.model.KubernetesList
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.ReplicationController
-import io.fabric8.kubernetes.api.model.ReplicationControllerList
 import io.fabric8.kubernetes.api.model.Service
-import io.fabric8.kubernetes.api.model.ServiceList
+import io.fabric8.kubernetes.internal.KubernetesDeserializer
 import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.api.model.ProjectList
 import kotlinx.coroutines.runBlocking
+import no.skatteetaten.aurora.kubernetes.crd.ApplicationDeployment
 import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
@@ -96,31 +95,33 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-    /*
-    not sure how to fix this
     @Test
     fun `Get application deployments`() {
+
+        KubernetesDeserializer.registerCustomKind(
+            "skatteetaten.no/v1",
+            "ApplicationDeploymentList",
+            KubernetesList::class.java
+        )
+
+        KubernetesDeserializer.registerCustomKind(
+            "skatteetaten.no/v1",
+            "ApplicationDeployment",
+            ApplicationDeployment::class.java
+        )
+
         runBlocking {
-            val ad: ApplicationDeployment =
-                kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
-                    metadata {
-                        namespace = NAMESPACE
-                        name = NAME
-                    }
-                })
+            val myAd = ApplicationDeployment()
 
-            val ads: ApplicationDeploymentList =
-                kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
-                    metadata {
-                        namespace = NAMESPACE
-                    }
-                })
+            myAd.metadata = newObjectMeta {
+                namespace = NAMESPACE
+            }
 
-            assertThat(ad).isNotNull()
+            val ads: List<ApplicationDeployment> = kubernetesClient.getList(myAd)
+
             assertThat(ads).isNotNull()
         }
     }
-     */
 
     @Test
     fun `Get services`() {
@@ -261,6 +262,4 @@ class KubernetesUserTokenClientIntegrationTest {
             assertThat(deleted).isTrue()
         }
     }
-
-
 }

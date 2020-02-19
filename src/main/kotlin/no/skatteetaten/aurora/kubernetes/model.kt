@@ -2,16 +2,7 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.fabric8.kubernetes.api.model.ObjectMeta
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-data class ApplicationDeployment(
-    val kind: String = "ApplicationDeployment",
-    val metadata: ObjectMeta,
-    val apiVersion: String = "skatteetaten.no/v1",
-    val spec: ApplicationDeploymentSpec
-)
+import no.skatteetaten.aurora.kubernetes.crd.ApplicationDeployment
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
