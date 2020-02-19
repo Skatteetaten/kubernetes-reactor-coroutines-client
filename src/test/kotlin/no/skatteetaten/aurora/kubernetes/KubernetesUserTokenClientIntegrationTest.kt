@@ -111,7 +111,7 @@ class KubernetesUserTokenClientIntegrationTest {
         )
 
         runBlocking {
-            val ads: List<ApplicationDeployment> = kubernetesClient.getMany(
+            val ads: List<ApplicationDeployment> = kubernetesClient.getManyWithQueryResource(
                 ApplicationDeploymentStub(namespace = NAMESPACE)
             )
             assertThat(ads).isNotNull()
@@ -206,7 +206,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `proxy pod`() {
         runBlocking {
-            val pod: Pod = kubernetesClient.getMany<Pod, Pod>(newPod {
+            val pod: Pod = kubernetesClient.getMany(newPod {
                 metadata {
                     namespace = NAMESPACE
                     labels = mapOf("app" to NAME)

@@ -49,10 +49,13 @@ class KubernetesCoroutinesClient(val client: KubernetesClient) {
     suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind =
         getOrNull(resource) ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
 
-    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getMany(resource: Input): List<Output> {
-        return client.getList<Input, Output>(resource).awaitFirst()
+    suspend inline fun <reified Kind : HasMetadata> getMany(resource:Kind): List<Kind> {
+        return client.getMany(resource).awaitFirst()
     }
 
+    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getManyWithQueryResource(resource: Input): List<Output> {
+        return client.getManyWithQueryResource<Input, Output>(resource).awaitFirst()
+    }
     suspend inline fun <reified Input : HasMetadata> post(resource: Input): Input =
         client.post(resource).awaitFirst()
 
@@ -108,7 +111,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
 
         return webClient.put()
             .kubernetesBodyUri(
-                resource = dc, 
+                resource = dc,
                 body = scale,
                 uriSuffix = "/scale"
             ).perform()
@@ -186,13 +189,21 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
 
-    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getList(resource: Input): Mono<List<Output>> {
+    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getManyWithQueryResource(resource: Input): Mono<List<Output>> {
         return webClient.get()
             .kubernetesListUri(resource)
             .perform<KubernetesResourceList<Output>>()
             .map { it.items }
     }
 
+
+    inline fun <reified Kind : HasMetadata> getMany(resource: Kind): Mono<List<Kind>> {
+        return webClient.get()
+            .kubernetesListUri(resource)
+            .perform<KubernetesResourceList<Kind>>()
+            .map { it.items }
+
+    }
 
     inline fun <reified Kind : HasMetadata> post(resource: Kind, body: Any = resource): Mono<Kind> {
         return webClient.post()
