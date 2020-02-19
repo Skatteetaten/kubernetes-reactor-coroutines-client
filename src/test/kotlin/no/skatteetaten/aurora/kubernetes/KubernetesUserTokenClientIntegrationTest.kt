@@ -128,7 +128,6 @@ class KubernetesUserTokenClientIntegrationTest {
             val services: List<Service> = kubernetesClient.getList(newService {
                 metadata = newObjectMeta {
                     namespace = NAMESPACE
-                    name= "boober"
                 }
             })
             assertThat(services).isNotNull()
@@ -246,13 +245,13 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-   // @Disabled("add name before running test")
+    @Disabled("add name before running test")
     @Test
     fun `Delete application deployment`() {
         runBlocking {
             val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
                 metadata {
-                    name = "test"
+                    name = ""
                     namespace = NAMESPACE_DEV
                 }
             }, newDeleteOptions {
