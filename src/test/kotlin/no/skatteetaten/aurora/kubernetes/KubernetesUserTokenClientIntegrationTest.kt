@@ -24,8 +24,8 @@ import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.internal.KubernetesDeserializer
 import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.api.model.Route
 import kotlinx.coroutines.runBlocking
-import no.skatteetaten.aurora.kubernetes.crd.ApplicationDeployment
 import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
@@ -67,7 +67,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get routes`() {
         runBlocking {
-            val routes = kubernetesClient.getList(newRoute { metadata { namespace = NAMESPACE } })
+            val routes: List<Route> = kubernetesClient.getList(newRoute { metadata { namespace = NAMESPACE } })
             val route = kubernetesClient.get(
                 newRoute {
                     metadata {
@@ -111,14 +111,9 @@ class KubernetesUserTokenClientIntegrationTest {
         )
 
         runBlocking {
-            val myAd = ApplicationDeployment()
-
-            myAd.metadata = newObjectMeta {
-                namespace = NAMESPACE
-            }
-
-            val ads: List<ApplicationDeployment> = kubernetesClient.getList(myAd)
-
+            val ads: List<ApplicationDeployment> = kubernetesClient.getList(
+                ApplicationDeploymentStub(namespace = NAMESPACE)
+            )
             assertThat(ads).isNotNull()
         }
     }
@@ -211,7 +206,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `proxy pod`() {
         runBlocking {
-            val pod: Pod = kubernetesClient.getList(newPod {
+            val pod: Pod = kubernetesClient.getList<Pod, Pod>(newPod {
                 metadata {
                     namespace = NAMESPACE
                     labels = mapOf("app" to NAME)

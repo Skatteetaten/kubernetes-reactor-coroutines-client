@@ -11,10 +11,11 @@ import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
+import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
-import kotlinx.coroutines.reactive.awaitFirstOrElse
+import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import mu.KotlinLogging
@@ -104,7 +105,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
      @return Mono<Kind>: A mono that can either be a result, empty (if the resource is not found) or an exception if it fails
      */
     inline fun <reified Kind : HasMetadata> getMono(resource: Kind): Mono<Kind> {
-        return webClient.get().kubernetesUri(resource, labels = emptyMap()).perform()
+        return webClient.get().kubernetesUri(resource).perform()
     }
 
     /*
@@ -158,38 +159,22 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                 additionalUriVariables = mapOf(
                     "port" to port.toString(),
                     "path" to if (path.startsWith("/")) path else "/$path"
-                ),
-                labels = emptyMap()
+                )
             )
             .perform<T>()
             .awaitSingle()
     }
 
     //TODO: if the resource that we get in here has a name the wrong url will be generated
-    inline fun <reified Kind : HasMetadata> getListMono(resource: Kind): Mono<List<Kind>> {
+    inline fun <reified Kind : HasMetadata, reified T : HasMetadata> getListMono(resource: Kind): Mono<List<T>> {
         return webClient.get()
-            .kubernetesUri(resource)
-            .perform<KubernetesResourceList<Kind>>()
+            .kubernetesListUri(resource)
+            .perform<KubernetesResourceList<T>>()
             .map { it.items }
     }
 
-    /*
-      //TODO: if the resource that we get in here has a name the wrong url will be generated
-    inline fun <reified Kind : HasMetadata> getListMono(resource: Kind): Mono<List<Kind>> {
-        return webClient.get()
-            .kubernetesUri(resource)
-            .perform<HasMetadata>()
-            .map {
-                if (it.kind == "KubernetesResourceList") {
-                    (it as KubernetesResourceList<Kind>).items as List<Kind>
-                } else {
-                    listOf(it) as List<Kind>
-                }
-            }
-    }
-     */
-    suspend inline fun <reified Kind : HasMetadata> getList(resource: Kind): List<Kind> {
-        return getListMono(resource).awaitSingle()
+    suspend inline fun <reified Kind : HasMetadata, reified T : HasMetadata> getList(resource: Kind): List<T> {
+        return getListMono<Kind, T>(resource).awaitSingle()
     }
 
     suspend inline fun <reified Kind : HasMetadata> postResource(resource: Kind, body: Any = resource): Kind {
@@ -217,11 +202,8 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         } ?: webClient.delete().kubernetesUri(resource)
         val response = request.perform<Any>()
         return response.map { true }
-            .doOnError {
-                val logger = KotlinLogging.logger {}
-                logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${it.message}")
-            }
-            .awaitFirstOrElse { false }
+            .or(Mono.empty())
+            .awaitFirst()
     }
 
     inline fun <reified Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
@@ -233,17 +215,27 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .body(BodyInserters.fromValue(body))
     }
 
-    fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
+    fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(
         resource: Kind,
-        uriSuffix: String = "",
-        additionalUriVariables: Map<String, String> = emptyMap(),
         labels: Map<String, String?> = resource.metadata?.labels ?: emptyMap()
     ): WebClient.RequestHeadersSpec<*> {
+
+        val metadata = if (resource.metadata == null) {
+            null
+        } else {
+            newObjectMeta {
+                namespace = resource.metadata?.namespace
+            }
+        }
+
+        val baseUri = createUrl(metadata, resource.apiVersion)
+        val urlVariables = resource.uriVariables()
+
         if (labels.isNullOrEmpty()) {
-            return this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
+            return this.uri(baseUri, urlVariables)
         }
         return this.uri { builder ->
-            builder.path("${resource.uri()}$uriSuffix")
+            builder.path(baseUri)
                 .queryParam("labelSelector", labels.map {
                     if (it.value.isNullOrEmpty()) {
                         it.key
@@ -251,14 +243,38 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                         "${it.key}=${it.value}"
                     }
                 }.joinToString(","))
-                .build(resource.uriVariables() + additionalUriVariables)
+                .build(urlVariables)
         }
+    }
+
+    fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
+        resource: Kind,
+        uriSuffix: String = "",
+        additionalUriVariables: Map<String, String> = emptyMap()
+    ): WebClient.RequestHeadersSpec<*> {
+        return this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
     }
 
     fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
         token?.let {
             this.header(HttpHeaders.AUTHORIZATION, "Bearer $token")
         } ?: this
+
+    fun createUrl(metadata: ObjectMeta?, apiVersion: String): String {
+        val contextRoot = if (apiVersion == "v1") {
+            "/api"
+        } else {
+            "/apis"
+        }
+
+        return if (metadata == null) {
+            "$contextRoot/${apiVersion}/{kind}"
+        } else {
+            metadata.namespace?.let {
+                "$contextRoot/${apiVersion}/namespaces/{namespace}/{kind}/{name}"
+            } ?: "$contextRoot/${apiVersion}/{kind}/{name}"
+        }
+    }
 }
 
 @FunctionalInterface
@@ -278,6 +294,12 @@ fun String.plurlize() = if (this.endsWith("s")) {
 } else {
     "${this}s"
 }
+
+/*
+ deleteMany/getMany : ignorere name, hvis namespace er satt, du vil ha med labels
+ get/post/put/delete : ignorer labels
+ */
+
 
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
