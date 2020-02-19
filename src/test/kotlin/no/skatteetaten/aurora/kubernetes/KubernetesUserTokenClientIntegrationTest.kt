@@ -128,6 +128,7 @@ class KubernetesUserTokenClientIntegrationTest {
             val services: List<Service> = kubernetesClient.getList(newService {
                 metadata = newObjectMeta {
                     namespace = NAMESPACE
+                    name= "boober"
                 }
             })
             assertThat(services).isNotNull()

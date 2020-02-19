@@ -165,18 +165,31 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .awaitSingle()
     }
 
-
-
     //TODO: if the resource that we get in here has a name the wrong url will be generated
-    inline fun <reified Kind : HasMetadata> getListReactive(resource: Kind): Mono<List<Kind>> {
+    inline fun <reified Kind : HasMetadata> getListMono(resource: Kind): Mono<List<Kind>> {
         return webClient.get()
             .kubernetesUri(resource)
             .perform<KubernetesResourceList<Kind>>()
-            .map{ it.items}
+            .map { it.items }
     }
 
+    /*
+      //TODO: if the resource that we get in here has a name the wrong url will be generated
+    inline fun <reified Kind : HasMetadata> getListMono(resource: Kind): Mono<List<Kind>> {
+        return webClient.get()
+            .kubernetesUri(resource)
+            .perform<HasMetadata>()
+            .map {
+                if (it.kind == "KubernetesResourceList") {
+                    (it as KubernetesResourceList<Kind>).items as List<Kind>
+                } else {
+                    listOf(it) as List<Kind>
+                }
+            }
+    }
+     */
     suspend inline fun <reified Kind : HasMetadata> getList(resource: Kind): List<Kind> {
-        return getListReactive(resource).awaitSingle()
+        return getListMono(resource).awaitSingle()
     }
 
     suspend inline fun <reified Kind : HasMetadata> postResource(resource: Kind, body: Any = resource): Kind {
@@ -198,18 +211,17 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
     }
 
     suspend inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Boolean {
-            val request=options?.let {
-                webClient.method(HttpMethod.DELETE)
-                    .kubernetesBodyUri(resource, it)
-            } ?: webClient.delete().kubernetesUri(resource)
-            val response=request.perform<Any>()
-            return response.map { true}
-                .doOnError {
-                    val logger= KotlinLogging.logger {}
-                    logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${it.message}")
-                }
-                .awaitFirstOrElse { false }
-
+        val request = options?.let {
+            webClient.method(HttpMethod.DELETE)
+                .kubernetesBodyUri(resource, it)
+        } ?: webClient.delete().kubernetesUri(resource)
+        val response = request.perform<Any>()
+        return response.map { true }
+            .doOnError {
+                val logger = KotlinLogging.logger {}
+                logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${it.message}")
+            }
+            .awaitFirstOrElse { false }
     }
 
     inline fun <reified Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
@@ -221,7 +233,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .body(BodyInserters.fromValue(body))
     }
 
-   fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
+    fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
         resource: Kind,
         uriSuffix: String = "",
         additionalUriVariables: Map<String, String> = emptyMap(),
