@@ -1,31 +1,20 @@
 package no.skatteetaten.aurora.kubernetes
 
 import com.fkorotkov.kubernetes.newObjectMeta
-import com.fkorotkov.kubernetes.newPod
 import com.fkorotkov.kubernetes.v1.metadata
 import com.fkorotkov.kubernetes.v1.newScale
 import com.fkorotkov.kubernetes.v1.spec
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
-import io.fabric8.kubernetes.api.model.DeleteOptions
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResourceList
-import io.fabric8.kubernetes.api.model.ObjectMeta
-import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
-import kotlinx.coroutines.reactive.awaitSingle
 import mu.KotlinLogging
-import no.skatteetaten.aurora.kubernetes.crd.QueryResource
-import no.skatteetaten.aurora.kubernetes.crd.SkatteetatenKubernetesResource
-import no.skatteetaten.aurora.kubernetes.crd.newQueryResource
-import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenQueryResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
-import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -33,7 +22,6 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
 import java.time.Duration
-import kotlin.reflect.full.createInstance
 
 class ResourceNotFoundException(m: String) : RuntimeException(m)
 
@@ -56,9 +44,10 @@ class KubernetesCoroutinesClient(val client: KubernetesClient) {
         client.get(resource).awaitFirstOrNull()
 
     suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind =
-        getOrNull(resource) ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
+        getOrNull(resource)
+            ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
 
-    suspend inline fun <reified Kind : HasMetadata> getMany(resource:Kind): List<Kind> {
+    suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind): List<Kind> {
         return client.getMany(resource).awaitFirst()
     }
 
@@ -148,7 +137,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                 body = scale,
                 uriSuffix = "/scale"
             ).perform()
-        
+
         /*
         return webClient
             .put()
@@ -177,7 +166,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                 "force" to true
             ),
             uriSuffix = "/instantiate"
-            ).perform()
+        ).perform()
         /*
         return webClient
             .post()
@@ -211,8 +200,6 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             )
             .perform()
     }
-
-
 
 
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
