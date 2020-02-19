@@ -35,14 +35,19 @@ class ResourceNotFoundException(m: String) : RuntimeException(m)
 private val logger = KotlinLogging.logger {}
 
 class KubernetesCoroutinesClient(val client: KubernetesClient) {
-    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getOrNull(resource: Input): Output? =
-        client.get<Input, Output>(resource).awaitFirstOrNull()
+    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getOrNullWithQueryResource(resource: Input): Output? =
+        client.getWithQueryResource<Input, Output>(resource).awaitFirstOrNull()
 
-    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> get(resource: Input): Output {
-        return getOrNull(resource)
+    suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Output {
+        return getOrNullWithQueryResource(resource)
             ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
     }
+    
+    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
+        client.get(resource).awaitFirstOrNull()
 
+    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind =
+        getOrNull(resource) ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
 
     suspend inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getMany(resource: Input): List<Output> {
         return client.getList<Input, Output>(resource).awaitFirst()
@@ -101,11 +106,21 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             }
         }
 
+        return webClient.put()
+            .kubernetesBodyUri(
+                resource = dc, 
+                body = scale,
+                uriSuffix = "/scale"
+            ).perform()
+        
+        /*
         return webClient
             .put()
             .uri("${dc.uri()}/scale", dc.uriVariables())
             .body(BodyInserters.fromValue(scale))
             .perform()
+            
+         */
     }
 
     fun rolloutDeploymentConfig(namespace: String, name: String): Mono<DeploymentConfig> {
@@ -116,6 +131,18 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             }
         }
 
+        return webClient.post().kubernetesBodyUri(
+            resource = dc,
+            body = mapOf(
+                "kind" to "DeploymentRequest",
+                "apiVersion" to "apps.openshift.io/v1",
+                "name" to name,
+                "latest" to true,
+                "force" to true
+            ),
+            uriSuffix = "/instantiate"
+            ).perform()
+        /*
         return webClient
             .post()
             .uri("${dc.uri()}/instantiate", dc.uriVariables())
@@ -131,6 +158,8 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
                 )
             )
             .perform()
+            
+         */
     }
 
 
@@ -147,7 +176,12 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .perform()
     }
 
-    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> get(resource: Input): Mono<Output> {
+
+    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Mono<Output> {
+        return webClient.get().kubernetesUri(resource).perform()
+    }
+
+    inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
         return webClient.get().kubernetesUri(resource).perform()
     }
 

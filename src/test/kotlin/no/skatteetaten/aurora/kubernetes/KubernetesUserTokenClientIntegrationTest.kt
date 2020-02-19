@@ -47,7 +47,7 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get projects`() {
         runBlocking {
             val projects: List<Project> = kubernetesClient.getMany(newProject { })
-            val project: Project = kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
+            val project= kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
 
             assertThat(projects).isNotNull()
             assertThat(project).isNotNull()
@@ -68,7 +68,7 @@ class KubernetesUserTokenClientIntegrationTest {
     fun `Get routes`() {
         runBlocking {
             val routes: List<Route> = kubernetesClient.getMany(newRoute { metadata { namespace = NAMESPACE } })
-            val route: Route = kubernetesClient.get(
+            val route = kubernetesClient.get(
                 newRoute {
                     metadata {
                         namespace = NAMESPACE
@@ -85,7 +85,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get deployment config`() {
         runBlocking {
-            val dc: Service = kubernetesClient.get(newDeploymentConfig {
+            val dc = kubernetesClient.get(newDeploymentConfig {
                 metadata {
                     namespace = NAMESPACE
                     name = NAME
@@ -152,7 +152,7 @@ class KubernetesUserTokenClientIntegrationTest {
                 }
             })
 
-            val rc: ReplicationController = kubernetesClient.get(newReplicationController {
+            val rc = kubernetesClient.get(newReplicationController {
                 metadata {
                     namespace = NAMESPACE
                     name = rcs.first().metadata.name
@@ -167,7 +167,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get image stream tag`() {
         runBlocking {
-            val ist : ImageStreamTag = kubernetesClient.get(newImageStreamTag {
+            val ist = kubernetesClient.get(newImageStreamTag {
                 metadata {
                     namespace = NAMESPACE
                     name = "$NAME:latest"
@@ -181,7 +181,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get user`() {
         runBlocking {
-            val u: User = kubernetesClient.get(newCurrentUser())
+            val u = kubernetesClient.get(newCurrentUser())
             assertThat(u).isNotNull()
         }
     }
