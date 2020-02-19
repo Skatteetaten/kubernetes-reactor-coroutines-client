@@ -22,6 +22,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
@@ -204,7 +205,8 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             val response=request.perform<Any>()
             return response.map { true}
                 .doOnError {
-                    logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${t.message}")
+                    val logger= KotlinLogging.logger {}
+                    logger.warn("Unable to delete resource, ${resource.metadata.namespace} ${resource.metadata.name}. ${it.message}")
                 }
                 .awaitFirstOrElse { false }
 

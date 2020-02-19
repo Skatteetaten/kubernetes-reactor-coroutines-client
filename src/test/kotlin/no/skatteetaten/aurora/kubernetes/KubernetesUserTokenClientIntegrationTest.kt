@@ -245,13 +245,13 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-    @Disabled("add name before running test")
+   // @Disabled("add name before running test")
     @Test
     fun `Delete application deployment`() {
         runBlocking {
             val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
                 metadata {
-                    name = ""
+                    name = "test"
                     namespace = NAMESPACE_DEV
                 }
             }, newDeleteOptions {

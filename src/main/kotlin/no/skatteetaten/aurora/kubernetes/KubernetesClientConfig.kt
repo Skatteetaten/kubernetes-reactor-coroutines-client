@@ -71,7 +71,6 @@ class KubernetesClientConfig(
 
     @Qualifier("kubernetesClientWebClient")
     @Bean
-    @Qualifier("kubernetesClientWebClient")
     fun kubernetesWebClient(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") tcpClient: TcpClient
