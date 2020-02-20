@@ -1,8 +1,8 @@
 package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
+import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
@@ -23,13 +23,13 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.internal.KubernetesDeserializer
-import io.fabric8.openshift.api.model.*
+import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.api.model.Route
 import kotlinx.coroutines.runBlocking
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
-import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
 import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.testWebClient
 import org.junit.jupiter.api.Disabled
@@ -39,7 +39,8 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val reactiveClient = KubernetesClient.create(testWebClient(), kubernetesToken())
+    private val reactiveClient =
+        KubernetesReactiveClient.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
     private val kubernetesClient = KubernetesCoroutinesClient(reactiveClient)
 
     @Test
@@ -108,14 +109,14 @@ class KubernetesUserTokenClientIntegrationTest {
             "ApplicationDeployment",
             ApplicationDeployment::class.java
         )
+        val ad = newApplicationDeployment {
+            metadata {
+                this.namespace = NAMESPACE
+            }
+        }
 
         runBlocking {
-            val ads = kubernetesClient.getMany(newApplicationDeployment {
-                metadata {
-                    this.namespace = namespace
-                }
-            })
-
+            val ads = kubernetesClient.getMany(ad)
             assertThat(ads).isNotNull()
         }
     }
@@ -141,6 +142,14 @@ class KubernetesUserTokenClientIntegrationTest {
                 }
             })
 
+            assertThat(pods).isNotNull()
+        }
+    }
+
+    @Test
+    fun `Get pods with metadata`() {
+        runBlocking {
+            val pods: List<Pod> = kubernetesClient.getMany(newObjectMeta { namespace = NAMESPACE })
             assertThat(pods).isNotNull()
         }
     }
@@ -229,7 +238,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Roll out deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE_DEV, "")
+            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE, "")
             assertThat(dc).isNotNull()
         }
     }
@@ -238,7 +247,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Scale deployment config`() {
         runBlocking {
-            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE_DEV, "", 2)
+            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE, "", 2)
             assertThat(s).isNotNull()
         }
     }
@@ -250,13 +259,28 @@ class KubernetesUserTokenClientIntegrationTest {
             val deleted = kubernetesClient.delete(newApplicationDeployment {
                 metadata {
                     name = ""
-                    namespace = NAMESPACE_DEV
+                    namespace = ""
                 }
             }, newDeleteOptions {
                 propagationPolicy = "Background"
             })
 
-            assertThat(deleted).isTrue()
+            assertThat(deleted.status).isEqualTo("Success")
+        }
+    }
+
+    @Disabled("add name before running test")
+    @Test
+    fun `Delete application deployment without options`() {
+        runBlocking {
+            val deleted = kubernetesClient.delete(newApplicationDeployment {
+                metadata {
+                    name = ""
+                    namespace = ""
+                }
+            })
+
+            assertThat(deleted.status).isEqualTo("Success")
         }
     }
 }

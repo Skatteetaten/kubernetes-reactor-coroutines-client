@@ -6,3 +6,5 @@ integrations:
 
 kubernetes:
     tokenLocation: src/test/resources/test-token.txt
+    retry:
+        times: 0

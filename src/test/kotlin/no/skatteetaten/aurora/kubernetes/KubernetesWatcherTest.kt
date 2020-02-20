@@ -16,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 
 @ActiveProfiles("test")
-@SpringBootTest(classes = [KubernetesClientConfig::class, TestConfig::class])
+@SpringBootTest(classes = [KubernetesClientConfig::class, TestConfig::class, KubernetesRetryConfiguration::class])
 class KubernetesWatcherTest {
     @Autowired
     private lateinit var kubernetesWatcher: KubernetesWatcher

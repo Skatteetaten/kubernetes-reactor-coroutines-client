@@ -18,10 +18,10 @@ class TestConfig {
     fun webClientBuilder() = WebClient.builder()
 }
 
-@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class])
+@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
 class KubernetesClientConfigTest {
     @Autowired
-    private lateinit var client: KubernetesClient
+    private lateinit var client: KubernetesReactiveClient
 
     @MockkBean
     private lateinit var tokenFetcher: TokenFetcher
@@ -32,11 +32,11 @@ class KubernetesClientConfigTest {
     }
 }
 
-@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class])
+@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
 class ServiceAccountConfigTest {
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     @Autowired
-    private lateinit var client: KubernetesClient
+    private lateinit var client: KubernetesReactiveClient
 
     @Test
     fun `Spring initialization`() {
@@ -45,11 +45,11 @@ class ServiceAccountConfigTest {
     }
 }
 
-@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class])
+@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
 class UserTokenConfigTest {
     @TargetClient(ClientTypes.USER_TOKEN)
     @Autowired
-    private lateinit var client: KubernetesClient
+    private lateinit var client: KubernetesReactiveClient
 
     @MockkBean
     private lateinit var tokenFetcher: TokenFetcher

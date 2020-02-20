@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import no.skatteetaten.aurora.kubernetes.crd.SkatteetatenCRD
 
-
 /*
 Since our example CRD has both required and optional fields we need to create a valid bottom type for it in the
 generator method

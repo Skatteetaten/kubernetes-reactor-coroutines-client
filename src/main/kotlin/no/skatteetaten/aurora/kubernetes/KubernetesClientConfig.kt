@@ -7,6 +7,7 @@ import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
@@ -26,6 +28,7 @@ import java.io.FileInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.TrustManagerFactory
 
@@ -40,8 +43,17 @@ enum class ClientTypes {
 @Qualifier
 annotation class TargetClient(val value: ClientTypes)
 
+@Component
+@ConfigurationProperties(prefix = "kubernetes.retry")
+data class KubernetesRetryConfiguration(
+    val times: Long = 3L,
+    val min: Duration = Duration.ofMillis(100),
+    val max: Duration = Duration.ofSeconds(1)
+)
+
 @Configuration
 class KubernetesClientConfig(
+    val retry: KubernetesRetryConfiguration,
     @Value("\${spring.application.name}") val applicationName: String,
     @Value("\${kubernetes.url}") val kubernetesUrl: String,
     @Value("\${kubernetes.tokenLocation:/var/run/secrets/kubernetes.io/serviceaccount/token}") val tokenLocation: String
@@ -56,33 +68,31 @@ class KubernetesClientConfig(
     @Bean
     fun kubernetesCloseableWatcher() = KubernetesCloseableWatcher()
 
-
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
-    fun kubernetesCoroutineClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
-        KubernetesCoroutinesClient(KubernetesClient.create(webClient, File(tokenLocation).readText()))
+    fun kubernetesCoroutineClientServiceAccount(@TargetClient(ClientTypes.SERVICE_ACCOUNT) client: KubernetesReactiveClient) =
+        KubernetesCoroutinesClient(client)
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
-    fun kubernetesCoroutineClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
-        KubernetesCoroutinesClient(KubernetesClient.create(webClient, tokenFetcher))
-
+    fun kubernetesCoroutineClientUserToken(@TargetClient(ClientTypes.USER_TOKEN) client: KubernetesReactiveClient) =
+        KubernetesCoroutinesClient(client)
 
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     fun kubernetesClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
-        KubernetesClient.create(webClient, File(tokenLocation).readText())
+        KubernetesReactiveClient.create(webClient, File(tokenLocation).readText(), retry)
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
     fun kubernetesClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
-        KubernetesClient.create(webClient, tokenFetcher)
+        KubernetesReactiveClient.create(webClient, tokenFetcher, retry)
 
     @Qualifier("kubernetesClientWebClient")
     @Bean
@@ -133,7 +143,6 @@ class KubernetesClientConfig(
         @Value("\${kubernetes.connectTimeout:5000}") connectTimeout: Int,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
     ): TcpClient = tcpClient(readTimeout, writeTimeout, connectTimeout, trustStore)
-
 
     fun tcpClient(
         readTimeout: Long,
