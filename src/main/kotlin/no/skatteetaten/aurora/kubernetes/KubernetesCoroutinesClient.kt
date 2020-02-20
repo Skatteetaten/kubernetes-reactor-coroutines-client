@@ -16,10 +16,10 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
   Note that all the methods in this class are inlined so it _cannot_ be mocked.
   If you need to mock calls using this client create a wrapper class in your code and mock that.
  */
-class KubernetesCoroutinesClient(val client: KubernetesReactiveClient) {
+class KubernetesCoroutinesClient(val client: KubernetesClient) {
 
     /*
-     Get a single resource resource with a given name or namepace
+     Get a single resource with a given name or namespace
 
      @param metadata Fetch a given resource using the namespace and name on this metadata object
      @return         A resource of the type Kind that is fetched reified from the variable you assign the result too
