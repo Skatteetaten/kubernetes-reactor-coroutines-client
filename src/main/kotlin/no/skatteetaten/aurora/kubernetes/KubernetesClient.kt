@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
+import org.springframework.web.util.UriBuilder
 import reactor.core.publisher.Mono
 import reactor.retry.Retry
 import java.time.Duration
@@ -241,6 +242,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .perform()
     }
 
+    // TODO: Sjekke om dette er gyldig i det hele tatt
     inline fun <reified Kind : HasMetadata> deleteMany(resource: Kind, options: DeleteOptions? = null): Mono<Boolean> {
         val request = options?.let {
             webClient.method(HttpMethod.DELETE)
@@ -252,6 +254,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .or(Mono.just(false))
     }
 
+    //TODO: Bør denne returnere boolean eller faktisk resultatet?
     inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Mono<Boolean> {
         val request = options?.let {
             webClient.method(HttpMethod.DELETE)
@@ -269,6 +272,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             .bodyToMono<T>()
             .notFoundAsEmpty()
             .retryWithLog(3L, 100L, 1000L)
+    //TODO: Lage parametre for dette
 
     fun <Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
         resource: Kind,
@@ -296,7 +300,7 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
         val baseUri = createUrl(metadata, resource.apiVersion)
         val urlVariables = resource.uriVariables()
 
-        val req = if (labels.isNullOrEmpty()) {
+        val req: WebClient.RequestBodySpec = if (labels.isNullOrEmpty()) {
             this.uri(baseUri, urlVariables)
         } else {
             this.uri { builder ->
@@ -329,23 +333,12 @@ class KubernetesClient(val webClient: WebClient, val tokenFetcher: TokenFetcher)
             }
         }
 
-        val baseUri = createUrl(metadata, resource.apiVersion)
-        val urlVariables = resource.uriVariables()
+        return this.uri {
+            it.path(createUrl(metadata, resource.apiVersion))
+                .addQueryParamIfExist(labels)
+                .build(resource.uriVariables())
+        }
 
-        if (labels.isNullOrEmpty()) {
-            return this.uri(baseUri, urlVariables)
-        }
-        return this.uri { builder ->
-            builder.path(baseUri)
-                .queryParam("labelSelector", labels.map {
-                    if (it.value.isNullOrEmpty()) {
-                        it.key
-                    } else {
-                        "${it.key}=${it.value}"
-                    }
-                }.joinToString(","))
-                .build(urlVariables)
-        }
     }
 
     fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
@@ -452,3 +445,17 @@ fun <T> Mono<T>.retryWithLog(times: Long = 3, retryFirstInMs: Long, retryMaxInMs
     )
 }
 
+fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?) : UriBuilder {
+    if(label.isNullOrEmpty()) return this
+    return this.queryParam(label.toLabelSelector())
+}
+
+fun Map<String, String?>.toLabelSelector(): String {
+    return this.map {
+        if (it.value.isNullOrEmpty()) {
+            it.key
+        } else {
+            "${it.key}=${it.value}"
+        }
+    }.joinToString(",")
+}
