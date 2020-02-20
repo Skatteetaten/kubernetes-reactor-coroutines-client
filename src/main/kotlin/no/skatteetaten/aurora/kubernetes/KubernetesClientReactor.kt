@@ -18,9 +18,10 @@ import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
-class KubernetesReactiveClient(
+class KubernetesClientReactor(
     val webClient: WebClient,
     val tokenFetcher: TokenFetcher,
     val retryConfiguration: KubernetesRetryConfiguration
@@ -28,10 +29,10 @@ class KubernetesReactiveClient(
 
     companion object {
         fun create(webClient: WebClient, tokenFetcher: TokenFetcher, retryConfiguration: KubernetesRetryConfiguration) =
-            KubernetesReactiveClient(webClient, tokenFetcher, retryConfiguration)
+            KubernetesClientReactor(webClient, tokenFetcher, retryConfiguration)
 
         fun create(webClient: WebClient, token: String, retryConfiguration: KubernetesRetryConfiguration) =
-            KubernetesReactiveClient(webClient, object : TokenFetcher {
+            KubernetesClientReactor(webClient, object : TokenFetcher {
                 override fun token() = token
             }, retryConfiguration)
     }
@@ -86,52 +87,12 @@ class KubernetesReactiveClient(
     }
 
     inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta): Mono<Kind> {
-        val apiVersion = Kind::class.createInstance().apiVersion
-        val query = object : HasMetadata {
-            override fun getMetadata() = metadata.let {
-                newObjectMeta {
-                    this.name = it.name
-                    this.namespace = it.namespace
-                }
-            }
-
-            override fun getKind() = Kind::class.simpleName!!
-            override fun getApiVersion() = apiVersion
-            override fun setMetadata(p0: ObjectMeta?) {
-                throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
-            }
-
-            override fun setApiVersion(p0: String?) {
-                throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
-            }
-        }
-
-        return webClient.get().kubernetesUri(query).perform()
+        return webClient.get().kubernetesUri(TypedHasMetadata(Kind::class, metadata)).perform()
     }
 
     inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null): Mono<List<Kind>> {
-
-        val apiVersion = Kind::class.createInstance().apiVersion
-        val query = object : HasMetadata {
-            override fun getMetadata() = metadata?.let {
-                newObjectMeta {
-                    this.namespace = it.namespace
-                    this.labels = it.labels
-                }
-            }
-
-            override fun getKind() = Kind::class.simpleName!!
-            override fun getApiVersion() = apiVersion
-            override fun setMetadata(p0: ObjectMeta?) {
-                throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
-            }
-
-            override fun setApiVersion(p0: String?) {
-                throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
-            }
-        }
         return webClient.get()
-            .kubernetesListUri<HasMetadata>(query)
+            .kubernetesListUri<HasMetadata>(TypedHasMetadata(Kind::class, metadata))
             .perform<KubernetesResourceList<Kind>>()
             .map { it.items }
     }
@@ -191,3 +152,23 @@ class KubernetesReactiveClient(
             .notFoundAsEmpty()
             .retryWithLog(retryConfiguration)
 }
+
+class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, private val metadata: ObjectMeta?) : HasMetadata {
+    override fun getMetadata() = metadata?.let {
+        newObjectMeta {
+            this.name = it.name
+            this.namespace = it.namespace
+        }
+    }
+
+    override fun getKind() = kind.simpleName!!
+    override fun getApiVersion(): String = kind.createInstance().apiVersion
+    override fun setMetadata(meta: ObjectMeta?) {
+        throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
+    }
+
+    override fun setApiVersion(version: String?) {
+        throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
+    }
+}
+

@@ -21,7 +21,7 @@ class TestConfig {
 @SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
 class KubernetesClientConfigTest {
     @Autowired
-    private lateinit var client: KubernetesReactiveClient
+    private lateinit var client: KubernetesClientReactor
 
     @MockkBean
     private lateinit var tokenFetcher: TokenFetcher
@@ -36,7 +36,7 @@ class KubernetesClientConfigTest {
 class ServiceAccountConfigTest {
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     @Autowired
-    private lateinit var client: KubernetesReactiveClient
+    private lateinit var client: KubernetesClientReactor
 
     @Test
     fun `Spring initialization`() {
@@ -49,7 +49,7 @@ class ServiceAccountConfigTest {
 class UserTokenConfigTest {
     @TargetClient(ClientTypes.USER_TOKEN)
     @Autowired
-    private lateinit var client: KubernetesReactiveClient
+    private lateinit var client: KubernetesClientReactor
 
     @MockkBean
     private lateinit var tokenFetcher: TokenFetcher

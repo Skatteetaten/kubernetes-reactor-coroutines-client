@@ -39,9 +39,9 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val reactiveClient =
-        KubernetesReactiveClient.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
-    private val kubernetesClient = KubernetesCoroutinesClient(reactiveClient)
+    private val client =
+        KubernetesClientReactor.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
+    private val kubernetesClient = KubernetesCoroutinesClient(client)
 
     @Test
     fun `Get projects`() {
