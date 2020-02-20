@@ -149,7 +149,7 @@ class KubernetesClient(
         this.bearerToken(tokenFetcher.token())
             .retrieve()
             .bodyToMono<T>()
-            .notFoundAsEmpty()
+            .notFounp0dAsEmpty()
             .retryWithLog(retryConfiguration)
 }
 
@@ -163,11 +163,11 @@ class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, priva
 
     override fun getKind() = kind.simpleName!!
     override fun getApiVersion(): String = kind.createInstance().apiVersion
-    override fun setMetadata(p0: ObjectMeta?) {
+    override fun setMetadata(meta: ObjectMeta?) {
         throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
     }
 
-    override fun setApiVersion(p0: String?) {
+    override fun setApiVersion(version: String?) {
         throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
     }
 }
