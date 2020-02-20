@@ -154,10 +154,10 @@ class KubernetesClient(
 }
 
 class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, private val metadata: ObjectMeta?) : HasMetadata {
-    override fun getMetadata() = metadata.let {
+    override fun getMetadata() = metadata?.let {
         newObjectMeta {
-            this.name = it?.name
-            this.namespace = it?.namespace
+            this.name = it.name
+            this.namespace = it.namespace
         }
     }
 
