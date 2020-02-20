@@ -20,7 +20,7 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
  *
  * @param client An instance of the reactive client that is used to back this client.
  **/
-class KubernetesCoroutinesClient(val client: KubernetesClient) {
+class KubernetesCoroutinesClient(val client: KubernetesClientReactor) {
 
     /**
      * Get a single resource with a given name or namespace

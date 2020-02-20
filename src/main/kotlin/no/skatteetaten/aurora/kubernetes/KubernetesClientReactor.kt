@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
-class KubernetesClient(
+class KubernetesClientReactor(
     val webClient: WebClient,
     val tokenFetcher: TokenFetcher,
     val retryConfiguration: KubernetesRetryConfiguration
@@ -29,10 +29,10 @@ class KubernetesClient(
 
     companion object {
         fun create(webClient: WebClient, tokenFetcher: TokenFetcher, retryConfiguration: KubernetesRetryConfiguration) =
-            KubernetesClient(webClient, tokenFetcher, retryConfiguration)
+            KubernetesClientReactor(webClient, tokenFetcher, retryConfiguration)
 
         fun create(webClient: WebClient, token: String, retryConfiguration: KubernetesRetryConfiguration) =
-            KubernetesClient(webClient, object : TokenFetcher {
+            KubernetesClientReactor(webClient, object : TokenFetcher {
                 override fun token() = token
             }, retryConfiguration)
     }
