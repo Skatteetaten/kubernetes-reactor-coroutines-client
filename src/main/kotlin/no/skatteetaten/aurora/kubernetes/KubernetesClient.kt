@@ -149,7 +149,7 @@ class KubernetesClient(
         this.bearerToken(tokenFetcher.token())
             .retrieve()
             .bodyToMono<T>()
-            .notFounp0dAsEmpty()
+            .notFoundAsEmpty()
             .retryWithLog(retryConfiguration)
 }
 
