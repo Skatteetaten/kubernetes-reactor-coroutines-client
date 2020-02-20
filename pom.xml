@@ -6,7 +6,7 @@
 
   <groupId>no.skatteetaten.aurora.kubernetes</groupId>
   <artifactId>kubernetes-reactor-coroutines-client</artifactId>
-  <version>AOS-4178-8</version>
+  <version>AOS-4178-9</version>
   <packaging>jar</packaging>
 
   <name>Kubernetes reactor coroutines client</name>

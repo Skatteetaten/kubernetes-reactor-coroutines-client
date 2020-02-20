@@ -17,7 +17,7 @@ class KubernetesCoroutinesClient(val client: KubernetesReactiveClient) {
 
     suspend inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta): Kind =
         getOrNull(metadata)
-            ?: throw ResourceNotFoundException("Resource with name=${metadata?.name} namespace=${metadata?.namespace} kind=${Kind::class.simpleName} was not found")
+            ?: throw ResourceNotFoundException("Resource with name=${metadata.name} namespace=${metadata.namespace} kind=${Kind::class.simpleName} was not found")
 
     suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
         client.get(resource).awaitFirstOrNull()
