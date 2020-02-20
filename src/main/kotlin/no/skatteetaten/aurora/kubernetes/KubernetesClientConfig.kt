@@ -71,28 +71,28 @@ class KubernetesClientConfig(
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
-    fun kubernetesCoroutineClientServiceAccount(@TargetClient(ClientTypes.SERVICE_ACCOUNT) client: KubernetesClientReactor) =
+    fun kubernetesCoroutineClientServiceAccount(@TargetClient(ClientTypes.SERVICE_ACCOUNT) client: KubernetesReactorClient) =
         KubernetesCoroutinesClient(client)
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
-    fun kubernetesCoroutineClientUserToken(@TargetClient(ClientTypes.USER_TOKEN) client: KubernetesClientReactor) =
+    fun kubernetesCoroutineClientUserToken(@TargetClient(ClientTypes.USER_TOKEN) client: KubernetesReactorClient) =
         KubernetesCoroutinesClient(client)
 
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     fun kubernetesClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
-        KubernetesClientReactor.create(webClient, File(tokenLocation).readText(), retry)
+        KubernetesReactorClient.create(webClient, File(tokenLocation).readText(), retry)
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
     fun kubernetesClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
-        KubernetesClientReactor.create(webClient, tokenFetcher, retry)
+        KubernetesReactorClient.create(webClient, tokenFetcher, retry)
 
     @Qualifier("kubernetesClientWebClient")
     @Bean

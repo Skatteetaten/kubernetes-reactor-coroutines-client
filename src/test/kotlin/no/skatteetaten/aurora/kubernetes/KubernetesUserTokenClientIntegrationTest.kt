@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test
 class KubernetesUserTokenClientIntegrationTest {
 
     private val client =
-        KubernetesClientReactor.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
+        KubernetesReactorClient.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
     private val kubernetesClient = KubernetesCoroutinesClient(client)
 
     @Test
