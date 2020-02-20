@@ -6,6 +6,8 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 /*
   An example CRD base class that can be extended for your own organizations CRD resources
   This is here as a convenience since extending the HasMetadata interface in kotlin is kind of a PITA
+
+  You should make sure that classes extending this class should not have any required fields
  */
 abstract class SkatteetatenCRD(private val _kind: String) : HasMetadata {
 

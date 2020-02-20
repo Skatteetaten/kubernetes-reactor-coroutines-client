@@ -7,7 +7,11 @@ import com.fkorotkov.kubernetes.v1.spec
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newUser
-import io.fabric8.kubernetes.api.model.*
+import io.fabric8.kubernetes.api.model.DeleteOptions
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.KubernetesResourceList
+import io.fabric8.kubernetes.api.model.ObjectMeta
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import kotlinx.coroutines.reactive.awaitFirst
@@ -51,7 +55,6 @@ class KubernetesCoroutinesClient(val client: KubernetesClient) {
     suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind): List<Kind> {
         return client.getMany(resource).awaitFirst()
     }
-
 
     /*
     suspend inline fun <reified Kind : HasMetadata> getMany(namespace: String): List<Kind> {
