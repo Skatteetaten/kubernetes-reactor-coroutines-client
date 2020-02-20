@@ -81,7 +81,6 @@ interface TokenFetcher {
     fun token(): String
 }
 
-// TODO: This has some issues if namespace is empty or name is empty. We need to assert earlier in the functions
 fun HasMetadata.uriVariables() = mapOf(
     "namespace" to this.metadata?.namespace,
     "kind" to this.kind.toLowerCase().plurlize(),
