@@ -46,7 +46,7 @@ class KubernetesCoroutinesClient(val client: KubernetesClientReactor) {
         return client.getMany(resource).awaitFirst()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta?): List<Kind> {
+    suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null): List<Kind> {
         return client.getMany<Kind>(metadata).awaitFirst()
     }
 
