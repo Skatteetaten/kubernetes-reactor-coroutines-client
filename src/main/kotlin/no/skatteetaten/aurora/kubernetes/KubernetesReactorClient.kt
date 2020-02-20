@@ -153,7 +153,8 @@ class KubernetesReactorClient(
             .retryWithLog(retryConfiguration)
 }
 
-class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, private val metadata: ObjectMeta?) : HasMetadata {
+class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, private val metadata: ObjectMeta?) :
+    HasMetadata {
     override fun getMetadata() = metadata?.let {
         newObjectMeta {
             this.name = it.name

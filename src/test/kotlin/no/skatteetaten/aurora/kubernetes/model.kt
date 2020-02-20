@@ -10,6 +10,7 @@ import no.skatteetaten.aurora.kubernetes.crd.SkatteetatenCRD
 /*
 Since our example CRD has both required and optional fields we need to create a valid bottom type for it in the
 generator method
+
  */
 fun newApplicationDeployment(block: ApplicationDeployment.() -> Unit = {}): ApplicationDeployment {
     val instance = ApplicationDeployment(
@@ -24,6 +25,8 @@ fun newApplicationDeployment(block: ApplicationDeployment.() -> Unit = {}): Appl
 /*
   An example CRD called ApplicationDeployment.
   If you want to run the tests in your own cluster feel free to add it from the file test/resources/ApplicationDeployment.json  file
+
+  It is very important to add the JsonDeserialize annotation to your CRDs if not jackson will not be able to marshall them.
  */
 @JsonPropertyOrder(value = ["apiVersion", "kind", "metadata", "spec"])
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -37,5 +40,4 @@ data class ApplicationDeployment(
 data class ApplicationDeploymentSpec(
     val applicationId: String,
     val applicationName: String? = null
-
 )
