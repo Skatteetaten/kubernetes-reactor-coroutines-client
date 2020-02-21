@@ -137,12 +137,22 @@ class KubernetesReactorClient(
             .perform()
     }
 
-    inline fun <reified Kind : HasMetadata> delete(resource: Kind, options: DeleteOptions? = null): Mono<Status> {
-        val request = options?.let {
-            webClient.method(HttpMethod.DELETE)
-                .kubernetesBodyUri(resource, it)
-        } ?: webClient.delete().kubernetesUri(resource)
-        return request.perform<Status>()
+    inline fun <reified Kind : HasMetadata> deleteForeground(resource: Kind, deleteOptions: DeleteOptions? = null): Mono<Kind> {
+        return webClient.method(HttpMethod.DELETE)
+            .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Foreground"))
+            .perform()
+    }
+
+    inline fun <reified Kind : HasMetadata> deleteOrphan(resource: Kind, deleteOptions: DeleteOptions? = null): Mono<Kind> {
+        return webClient.method(HttpMethod.DELETE)
+            .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Orphan"))
+            .perform()
+    }
+
+    inline fun <reified Kind : HasMetadata> deleteBackground(resource: Kind, deleteOptions: DeleteOptions?): Mono<Status> {
+        return webClient.method(HttpMethod.DELETE)
+            .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Background"))
+            .perform()
     }
 
     inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform() =

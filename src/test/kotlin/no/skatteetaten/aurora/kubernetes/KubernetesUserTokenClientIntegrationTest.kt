@@ -30,6 +30,7 @@ import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
+import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
 import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.testWebClient
 import org.junit.jupiter.api.Disabled
@@ -256,16 +257,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment`() {
         runBlocking {
-            val deleted = kubernetesClient.delete(newApplicationDeployment {
+            val deleted = kubernetesClient.deleteForeground(newApplicationDeployment {
                 metadata {
                     name = ""
-                    namespace = ""
+                    namespace = NAMESPACE_DEV
                 }
-            }, newDeleteOptions {
-                propagationPolicy = "Background"
-            })
+            }, newDeleteOptions { })
 
-            assertThat(deleted.status).isEqualTo("Success")
+            assertThat(deleted).isNotNull()
         }
     }
 
@@ -273,10 +272,10 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment without options`() {
         runBlocking {
-            val deleted = kubernetesClient.delete(newApplicationDeployment {
+            val deleted = kubernetesClient.deleteBackground(newApplicationDeployment {
                 metadata {
                     name = ""
-                    namespace = ""
+                    namespace = NAMESPACE_DEV
                 }
             })
 

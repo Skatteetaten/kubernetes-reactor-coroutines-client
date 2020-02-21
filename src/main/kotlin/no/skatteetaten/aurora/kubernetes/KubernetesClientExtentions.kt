@@ -1,8 +1,10 @@
 package no.skatteetaten.aurora.kubernetes
 
+import com.fkorotkov.kubernetes.newDeleteOptions
 import com.fkorotkov.kubernetes.newObjectMeta
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newUser
+import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import mu.KotlinLogging
@@ -163,3 +165,9 @@ fun Map<String, String?>.toLabelSelector(): String {
         }
     }.joinToString(",")
 }
+
+fun DeleteOptions?.propagationPolicy(propagationPolicy: String): DeleteOptions =
+    this?.let {
+        this.propagationPolicy = propagationPolicy
+        this
+    } ?: newDeleteOptions { this.propagationPolicy = propagationPolicy }
