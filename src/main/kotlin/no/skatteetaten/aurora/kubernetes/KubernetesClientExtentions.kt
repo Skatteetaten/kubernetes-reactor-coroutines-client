@@ -153,7 +153,7 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
 
 fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?): UriBuilder {
     if (label.isNullOrEmpty()) return this
-    return this.queryParam(label.toLabelSelector())
+    return this.queryParam("labelSelector", label.toLabelSelector())
 }
 
 fun Map<String, String?>.toLabelSelector(): String {
