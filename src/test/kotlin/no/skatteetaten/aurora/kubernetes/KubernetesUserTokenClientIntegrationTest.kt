@@ -61,6 +61,9 @@ class KubernetesUserTokenClientIntegrationTest {
             val projects: List<Project> =
                 kubernetesClient.getMany(newProject { metadata { labels = newLabel("removeAfter") } })
 
+            projects.iterator().forEach {
+                assertThat(it.metadata.labels.containsKey("removeAfter")).isEqualTo(true)
+            }
             assertThat(projects).isNotNull()
         }
     }
