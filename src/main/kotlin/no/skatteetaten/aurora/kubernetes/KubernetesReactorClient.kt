@@ -149,7 +149,7 @@ class KubernetesReactorClient(
             .perform()
     }
 
-    inline fun <reified Kind : HasMetadata> deleteBackground(resource: Kind, deleteOptions: DeleteOptions?): Mono<Status> {
+    inline fun <reified Kind : HasMetadata> deleteBackground(resource: Kind, deleteOptions: DeleteOptions? = null): Mono<Status> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Background"))
             .perform()
