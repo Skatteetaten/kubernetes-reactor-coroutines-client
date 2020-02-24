@@ -29,9 +29,23 @@ class KubernetesClientNetworkTest {
     private val server = MockWebServer()
     private val url = server.url("/")
 
-    private val client = KubernetesCoroutinesClient(
-        KubernetesReactorClient.create(WebClient.create(url.toString()), "test-token", KubernetesRetryConfiguration())
+    private val config = KubnernetesClientConfiguration(
+        retry = KubernetesRetryConfiguration(),
+        timeout = HttpClientTimeoutConfiguration(),
+        url = url.toString()
     )
+
+    private val reactiveClient = config.createUserAccountReactorClient(
+        builder = WebClient.builder(),
+        trustStore = null,
+        tokenFetcher = object : TokenFetcher {
+            override fun token() = "test-token"
+        }
+    ).apply {
+        webClientBuilder.defaultHeaders("kubernetes-reactor-coroutines-client-test")
+    }.build()
+
+    private val client = KubernetesCoroutinesClient(reactiveClient)
 
     @AfterEach
     fun tearDown() {
