@@ -1,6 +1,7 @@
 package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
+import assertk.assertions.hasSize
 import assertk.assertions.isFailure
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
@@ -69,12 +70,37 @@ class KubernetesClientNetworkTest {
 
     @Test
     fun `Return empty response for 404`() {
-        val errorResponse = MockResponse().setResponseCode(404).json(newProject { })
+        val errorResponse = MockResponse().setResponseCode(404)
 
         server.execute(errorResponse) {
             runBlocking {
                 val project = client.getOrNull(newProject { })
                 assertThat(project).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun `Throw ResourceNotFoundException when resource not found`() {
+        val errorResponse = MockResponse().setResponseCode(404)
+
+        server.execute(errorResponse) {
+            runBlocking {
+                assertThat {
+                    client.deleteForeground(newDeploymentConfig { })
+                }.isFailure().isInstanceOf(ResourceNotFoundException::class)
+            }
+        }
+    }
+
+    @Test
+    fun `Return empty list for 404`() {
+        val response = MockResponse().setResponseCode(404)
+
+        server.execute(response) {
+            runBlocking {
+                val projects = client.getMany(newProject { })
+                assertThat(projects).hasSize(0)
             }
         }
     }
