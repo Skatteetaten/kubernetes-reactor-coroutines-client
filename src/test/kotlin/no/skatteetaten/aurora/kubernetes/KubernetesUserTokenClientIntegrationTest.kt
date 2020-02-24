@@ -3,6 +3,7 @@ package no.skatteetaten.aurora.kubernetes
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
@@ -30,6 +31,7 @@ import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
+import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
 import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.testWebClient
 import org.junit.jupiter.api.Disabled
@@ -60,6 +62,9 @@ class KubernetesUserTokenClientIntegrationTest {
             val projects: List<Project> =
                 kubernetesClient.getMany(newProject { metadata { labels = newLabel("removeAfter") } })
 
+            projects.forEach {
+                assertThat(it.metadata.labels.containsKey("removeAfter")).isTrue()
+            }
             assertThat(projects).isNotNull()
         }
     }
@@ -256,16 +261,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment`() {
         runBlocking {
-            val deleted = kubernetesClient.delete(newApplicationDeployment {
+            val deleted = kubernetesClient.deleteForeground(newApplicationDeployment {
                 metadata {
                     name = ""
-                    namespace = ""
+                    namespace = NAMESPACE_DEV
                 }
-            }, newDeleteOptions {
-                propagationPolicy = "Background"
-            })
+            }, newDeleteOptions { })
 
-            assertThat(deleted.status).isEqualTo("Success")
+            assertThat(deleted).isNotNull()
         }
     }
 
@@ -273,10 +276,10 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment without options`() {
         runBlocking {
-            val deleted = kubernetesClient.delete(newApplicationDeployment {
+            val deleted = kubernetesClient.deleteBackground(newApplicationDeployment {
                 metadata {
                     name = ""
-                    namespace = ""
+                    namespace = NAMESPACE_DEV
                 }
             })
 

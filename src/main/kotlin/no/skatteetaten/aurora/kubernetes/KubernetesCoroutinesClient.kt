@@ -56,8 +56,14 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
     suspend inline fun <reified Input : HasMetadata> put(resource: Input): Input =
         client.put(resource).awaitFirst()
 
-    suspend inline fun <reified Input : HasMetadata> delete(resource: Input, options: DeleteOptions? = null): Status =
-        client.delete(resource, options).awaitFirst()
+    suspend inline fun <reified Input : HasMetadata> deleteBackground(resource: Input, options: DeleteOptions? = null): Status =
+        client.deleteBackground(resource, options).awaitFirst()
+
+    suspend inline fun <reified Input : HasMetadata> deleteForeground(resource: Input, options: DeleteOptions? = null): Input =
+        client.deleteForeground(resource, options).awaitFirst()
+
+    suspend inline fun <reified Input : HasMetadata> deleteOrphan(resource: Input, options: DeleteOptions? = null): Input =
+        client.deleteOrphan(resource, options).awaitFirst()
 
     suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
         return client.proxyGet<T>(pod, port, path).awaitFirst()

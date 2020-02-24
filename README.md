@@ -26,9 +26,9 @@ val dc = kubernetesClient.get(newDeploymentConfig {
 ### Get a resource list
 
 ```kotlin
-val pods: PodList = kubernetesClient.getList(newPod {
-    metadata {
-        namespace = ""
+val services: List<Service> = kubernetesClient.getMany(newService {
+    metadata = newObjectMeta {
+        namespace = NAMESPACE
     }
 })
 ``` 
@@ -36,11 +36,8 @@ val pods: PodList = kubernetesClient.getList(newPod {
 ### Get a resource list with label
 
 ```kotlin
-val projects: ProjectList = kubernetesClient.getList(newProject {
-    metadata {
-        labels = newLabel("removeAfter") 
-    }
-})
+val projects: List<Project> =
+    kubernetesClient.getMany(newProject { metadata { labels = newLabel("removeAfter") } })
 ```
 
 ### Create/Post a resource
@@ -60,24 +57,10 @@ val selfSubjectAccessView = kubernetesClient.post(s)
 
 ### Delete a resources
 ```kotlin
-val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+val deleted = kubernetesClient.deleteBackground(newApplicationDeployment {
     metadata {
         name = ""
         namespace = NAMESPACE_DEV
-    }
-}, newDeleteOptions {
-    propagationPolicy = "Background"
-})
-```
-
-### Custom resource definitions
-
-```kotlin
-val ad: ApplicationDeployment =
-kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
-    metadata {
-        namespace = ""
-        name = ""
     }
 })
 ```
