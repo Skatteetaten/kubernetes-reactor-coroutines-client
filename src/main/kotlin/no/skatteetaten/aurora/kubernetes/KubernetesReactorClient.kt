@@ -27,15 +27,6 @@ class KubernetesReactorClient(
     val retryConfiguration: KubernetesRetryConfiguration
 ) {
 
-    companion object {
-        fun create(webClient: WebClient, tokenFetcher: TokenFetcher, retryConfiguration: KubernetesRetryConfiguration) =
-            KubernetesReactorClient(webClient, tokenFetcher, retryConfiguration)
-
-        fun create(webClient: WebClient, token: String, retryConfiguration: KubernetesRetryConfiguration) =
-            KubernetesReactorClient(webClient, object : TokenFetcher {
-                override fun token() = token
-            }, retryConfiguration)
-    }
 
     fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Mono<Scale> {
         val dc = newDeploymentConfig {
@@ -137,13 +128,21 @@ class KubernetesReactorClient(
             .perform()
     }
 
-    inline fun <reified Kind : HasMetadata> deleteForeground(resource: Kind, deleteOptions: DeleteOptions? = null): Mono<Kind> {
+    //background=Status
+    //Foreground=Kind
+    inline fun <reified Kind : HasMetadata> deleteForeground(
+        resource: Kind,
+        deleteOptions: DeleteOptions? = null
+    ): Mono<Kind> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Foreground"))
             .perform()
     }
 
-    inline fun <reified Kind : HasMetadata> deleteOrphan(resource: Kind, deleteOptions: DeleteOptions? = null): Mono<Kind> {
+    inline fun <reified Kind : HasMetadata> deleteOrphan(
+        resource: Kind,
+        deleteOptions: DeleteOptions? = null
+    ): Mono<Kind> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Orphan"))
             .perform()

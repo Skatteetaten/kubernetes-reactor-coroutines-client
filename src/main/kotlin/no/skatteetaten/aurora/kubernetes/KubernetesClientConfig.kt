@@ -44,7 +44,96 @@ enum class ClientTypes {
 annotation class TargetClient(val value: ClientTypes)
 
 @Component
-@ConfigurationProperties(prefix = "kubernetes.retry")
+@ConfigurationProperties(prefix = "kubernetes")
+data class KubnernetesClientConfiguration(
+    val retry: KubernetesRetryConfiguration,
+    val timeout: HttpClientTimeoutConfiguration,
+    val url: String,
+    val tokenLoation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+) {
+
+    fun createUserAccountReactorClient(
+        builder: WebClient.Builder,
+        trustStore: KeyStore?,
+        tokenFetcher: TokenFetcher,
+        applicationName: String
+    ): KubernetesReactorClient {
+        val tcpClient = tcpClient(trustStore)
+        val webClient = kubernetesWebClient(builder, tcpClient, applicationName)
+        return KubernetesReactorClient(
+            webClient,
+            tokenFetcher,
+            this.retry
+        )
+    }
+
+    fun createServiceAccountReactorClient(
+        builder: WebClient.Builder,
+        trustStore: KeyStore?,
+        applicationName: String
+    ): KubernetesReactorClient {
+        val tcpClient = tcpClient(trustStore)
+        val webClient = kubernetesWebClient(builder, tcpClient, applicationName)
+        val token = File(tokenLoation).readText().trim()
+        return KubernetesReactorClient(
+            webClient,
+            object : TokenFetcher {
+                override fun token() = token
+            },
+            retry
+        )
+    }
+
+    fun kubernetesWebClient(
+        builder: WebClient.Builder,
+        tcpClient: TcpClient,
+        applicationName: String
+    ): WebClient {
+        logger.debug("Kubernetes url=${url}")
+        return builder
+            .baseUrl(url)
+            .defaultHeaders(applicationName)
+            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
+            .exchangeStrategies(
+                ExchangeStrategies.builder()
+                    .codecs {
+                        it.defaultCodecs().apply {
+                            maxInMemorySize(-1) // unlimited
+                        }
+                    }.build()
+            )
+            .build()
+    }
+
+    fun tcpClient(
+        trustStore: KeyStore?
+    ): TcpClient {
+        val trustFactory = TrustManagerFactory.getInstance("X509")
+        trustFactory.init(trustStore)
+
+        val sslProvider = SslProvider.builder().sslContext(
+            SslContextBuilder
+                .forClient()
+                .trustManager(trustFactory)
+                .build()
+        ).build()
+        return TcpClient.create()
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
+            .secure(sslProvider)
+            .doOnConnected { connection ->
+                connection
+                    .addHandlerLast(ReadTimeoutHandler(timeout.read.toMillis(), TimeUnit.MILLISECONDS))
+                    .addHandlerLast(WriteTimeoutHandler(timeout.write.toMillis(), TimeUnit.MILLISECONDS))
+            }
+    }
+}
+
+data class HttpClientTimeoutConfiguration(
+    val connect: Duration = Duration.ofSeconds(1),
+    val read: Duration = Duration.ofSeconds(2),
+    val write: Duration = Duration.ofSeconds(2)
+)
+
 data class KubernetesRetryConfiguration(
     val times: Long = 3L,
     val min: Duration = Duration.ofMillis(100),
@@ -53,10 +142,8 @@ data class KubernetesRetryConfiguration(
 
 @Configuration
 class KubernetesClientConfig(
-    val retry: KubernetesRetryConfiguration,
     @Value("\${spring.application.name}") val applicationName: String,
-    @Value("\${kubernetes.url}") val kubernetesUrl: String,
-    @Value("\${kubernetes.tokenLocation:/var/run/secrets/kubernetes.io/serviceaccount/token}") val tokenLocation: String
+    val config: KubnernetesClientConfiguration
 ) {
 
     @Bean
@@ -84,37 +171,22 @@ class KubernetesClientConfig(
     @Lazy(true)
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
-    fun kubernetesClientServiceAccount(@Qualifier("kubernetesClientWebClient") webClient: WebClient) =
-        KubernetesReactorClient.create(webClient, File(tokenLocation).readText(), retry)
+    fun kubernetesClientServiceAccount(
+        builder: WebClient.Builder,
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
+    ): KubernetesReactorClient {
+        return config.createServiceAccountReactorClient(builder, trustStore, applicationName)
+    }
 
     @Lazy(true)
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
-    fun kubernetesClientUserToken(@Qualifier("kubernetesClientWebClient") webClient: WebClient, tokenFetcher: TokenFetcher) =
-        KubernetesReactorClient.create(webClient, tokenFetcher, retry)
-
-    @Qualifier("kubernetesClientWebClient")
-    @Bean
-    fun kubernetesWebClient(
+    fun kubernetesClientUserToken(
         builder: WebClient.Builder,
-        @Qualifier("kubernetesClientWebClient") tcpClient: TcpClient
-    ): WebClient {
-        logger.debug("Kubernetes url=$kubernetesUrl")
-        return builder
-            .baseUrl(kubernetesUrl)
-            .defaultHeaders(applicationName)
-            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
-            .exchangeStrategies(
-                ExchangeStrategies.builder()
-                    .codecs {
-                        it.defaultCodecs().apply {
-                            maxInMemorySize(-1) // unlimited
-                        }
-                    }.build()
-            )
-            .build()
-    }
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
+        tokenFetcher: TokenFetcher
+    ) = config.createUserAccountReactorClient(builder, trustStore, tokenFetcher, applicationName)
 
     @Bean
     @Qualifier("kubernetesClientWebClient")
@@ -126,7 +198,7 @@ class KubernetesClientConfig(
             HttpClient.create()
                 .baseUrl(kubernetesUrl)
                 .headers { headers ->
-                    File(tokenLocation).takeIf { it.isFile }?.let {
+                    File(config.tokenLoation).takeIf { it.isFile }?.let {
                         headers.add(HttpHeaders.AUTHORIZATION, "Bearer ${it.readText()}")
                     }
 
@@ -135,39 +207,6 @@ class KubernetesClientConfig(
         )
     }
 
-    @Bean
-    @Qualifier("kubernetesClientWebClient")
-    fun kubernetesTcpClientWrapper(
-        @Value("\${kubernetes.readTimeout:5000}") readTimeout: Long,
-        @Value("\${kubernetes.writeTimeout:5000}") writeTimeout: Long,
-        @Value("\${kubernetes.connectTimeout:5000}") connectTimeout: Int,
-        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
-    ): TcpClient = tcpClient(readTimeout, writeTimeout, connectTimeout, trustStore)
-
-    fun tcpClient(
-        readTimeout: Long,
-        writeTimeout: Long,
-        connectTimeout: Int,
-        trustStore: KeyStore?
-    ): TcpClient {
-        val trustFactory = TrustManagerFactory.getInstance("X509")
-        trustFactory.init(trustStore)
-
-        val sslProvider = SslProvider.builder().sslContext(
-            SslContextBuilder
-                .forClient()
-                .trustManager(trustFactory)
-                .build()
-        ).build()
-        return TcpClient.create()
-            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeout)
-            .secure(sslProvider)
-            .doOnConnected { connection ->
-                connection
-                    .addHandlerLast(ReadTimeoutHandler(readTimeout, TimeUnit.MILLISECONDS))
-                    .addHandlerLast(WriteTimeoutHandler(writeTimeout, TimeUnit.MILLISECONDS))
-            }
-    }
 
     @Bean
     @Profile("local")
@@ -176,7 +215,7 @@ class KubernetesClientConfig(
 
     @Bean
     @Primary
-    @Profile("kubernetes")
+    @Profile("!local")
     @Qualifier("kubernetesClientWebClient")
     fun kubernetesSSLContext(@Value("\${trust.store}") trustStoreLocation: String): KeyStore =
         KeyStore.getInstance(KeyStore.getDefaultType())?.let { ks ->
@@ -192,3 +231,5 @@ class KubernetesClientConfig(
 private fun WebClient.Builder.defaultHeaders(applicationName: String) = this
     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
     .defaultHeader("User-Agent", applicationName)
+
+

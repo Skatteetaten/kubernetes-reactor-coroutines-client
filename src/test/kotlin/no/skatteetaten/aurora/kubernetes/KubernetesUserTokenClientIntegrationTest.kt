@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
+
     private val client =
         KubernetesReactorClient.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
     private val kubernetesClient = KubernetesCoroutinesClient(client)
@@ -257,13 +258,13 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-    @Disabled("add name before running test")
+    //@Disabled("add name before running test")
     @Test
     fun `Delete application deployment`() {
         runBlocking {
             val deleted = kubernetesClient.deleteForeground(newApplicationDeployment {
                 metadata {
-                    name = ""
+                    name = "k82814-gobo"
                     namespace = NAMESPACE_DEV
                 }
             }, newDeleteOptions { })
