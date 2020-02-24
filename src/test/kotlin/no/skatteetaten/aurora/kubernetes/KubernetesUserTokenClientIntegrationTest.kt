@@ -3,6 +3,7 @@ package no.skatteetaten.aurora.kubernetes
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
@@ -61,8 +62,8 @@ class KubernetesUserTokenClientIntegrationTest {
             val projects: List<Project> =
                 kubernetesClient.getMany(newProject { metadata { labels = newLabel("removeAfter") } })
 
-            projects.iterator().forEach {
-                assertThat(it.metadata.labels.containsKey("removeAfter")).isEqualTo(true)
+            projects.forEach {
+                assertThat(it.metadata.labels.containsKey("removeAfter")).isTrue()
             }
             assertThat(projects).isNotNull()
         }
