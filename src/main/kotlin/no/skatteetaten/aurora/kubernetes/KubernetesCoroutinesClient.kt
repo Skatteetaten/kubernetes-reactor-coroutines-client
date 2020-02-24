@@ -1,5 +1,6 @@
 package no.skatteetaten.aurora.kubernetes
 
+import com.fkorotkov.kubernetes.newObjectMeta
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
@@ -7,7 +8,6 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
-import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 
 /**
@@ -32,48 +32,73 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
         client.get<Kind>(metadata).awaitFirstOrNull()
 
     suspend inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta): Kind =
-        getOrNull(metadata)
-            ?: throw ResourceNotFoundException("Resource with name=${metadata.name} namespace=${metadata.namespace} kind=${Kind::class.simpleName} was not found")
+        getOrNull(metadata) ?: throwResourceNotFoundException(metadata)
 
     suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
         client.get(resource).awaitFirstOrNull()
 
     suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind =
-        getOrNull(resource)
-            ?: throw ResourceNotFoundException("Resource with name=${resource.metadata?.name} namespace=${resource.metadata?.namespace} kind=${resource.kind} was not found")
+        getOrNull(resource) ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind): List<Kind> {
-        return client.getMany(resource).awaitFirst()
+        return client.getMany(resource).awaitFirstOrNull() ?: emptyList()
     }
 
     suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null): List<Kind> {
-        return client.getMany<Kind>(metadata).awaitFirst()
+        return client.getMany<Kind>(metadata).awaitFirstOrNull() ?: emptyList()
     }
 
     suspend inline fun <reified Input : HasMetadata> post(resource: Input): Input =
-        client.post(resource).awaitFirst()
+        client.post(resource).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified Input : HasMetadata> put(resource: Input): Input =
-        client.put(resource).awaitFirst()
+        client.put(resource).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified Input : HasMetadata> deleteBackground(resource: Input, options: DeleteOptions? = null): Status =
-        client.deleteBackground(resource, options).awaitFirst()
+    suspend inline fun <reified Input : HasMetadata> deleteBackground(
+        resource: Input,
+        options: DeleteOptions? = null
+    ): Status =
+        client.deleteBackground(resource, options).awaitFirstOrNull()
+            ?: throw ResourceNotFoundException(notFoundMsg<Input>(resource.metadata))
 
-    suspend inline fun <reified Input : HasMetadata> deleteForeground(resource: Input, options: DeleteOptions? = null): Input =
-        client.deleteForeground(resource, options).awaitFirst()
+    suspend inline fun <reified Input : HasMetadata> deleteForeground(
+        resource: Input,
+        options: DeleteOptions? = null
+    ): Input =
+        client.deleteForeground(resource, options).awaitFirstOrNull()
+            ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified Input : HasMetadata> deleteOrphan(resource: Input, options: DeleteOptions? = null): Input =
-        client.deleteOrphan(resource, options).awaitFirst()
+    suspend inline fun <reified Input : HasMetadata> deleteOrphan(
+        resource: Input,
+        options: DeleteOptions? = null
+    ): Input =
+        client.deleteOrphan(resource, options).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
-        return client.proxyGet<T>(pod, port, path).awaitFirst()
+        return client.proxyGet<T>(pod, port, path).awaitFirstOrNull()
+            ?: throw ResourceNotFoundException(notFoundMsg<T>(pod.metadata))
     }
 
     suspend inline fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Scale {
-        return client.scaleDeploymentConfig(namespace, name, count).awaitFirst()
+        return client.scaleDeploymentConfig(namespace, name, count).awaitFirstOrNull()
+            ?: throw ResourceNotFoundException(notFoundMsg<Scale>(namespace, name))
     }
 
     suspend fun rolloutDeploymentConfig(namespace: String, name: String): DeploymentConfig {
-        return client.rolloutDeploymentConfig(namespace, name).awaitFirst()
+        return client.rolloutDeploymentConfig(namespace, name).awaitFirstOrNull()
+            ?: throw ResourceNotFoundException(notFoundMsg<Scale>(namespace, name))
     }
+
+    inline fun <reified Kind> throwResourceNotFoundException(metadata: ObjectMeta?): Kind {
+        throw ResourceNotFoundException(notFoundMsg<Kind>(metadata))
+    }
+
+    inline fun <reified Kind> notFoundMsg(namespace: String, name: String) =
+        notFoundMsg<Kind>(newObjectMeta {
+            this.namespace = namespace
+            this.name = name
+        })
+
+    inline fun <reified Kind> notFoundMsg(metadata: ObjectMeta?) =
+        "Resource with name=${metadata?.name} namespace=${metadata?.namespace} kind=${Kind::class.simpleName} was not found"
 }
