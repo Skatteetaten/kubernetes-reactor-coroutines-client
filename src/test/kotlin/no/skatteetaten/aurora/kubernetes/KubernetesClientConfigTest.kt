@@ -24,7 +24,7 @@ class TestConfig {
             KUBERNETES_URL,
             KubernetesRetryConfiguration(times = 0),
             HttpClientTimeoutConfiguration(),
-            tokenLoation = "src/test/resources/test-token.txt"
+            tokenLocation = "src/test/resources/test-token.txt"
         )
 }
 

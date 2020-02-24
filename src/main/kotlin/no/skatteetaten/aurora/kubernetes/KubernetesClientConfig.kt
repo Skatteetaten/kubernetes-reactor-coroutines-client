@@ -43,13 +43,14 @@ enum class ClientTypes {
 @Qualifier
 annotation class TargetClient(val value: ClientTypes)
 
+//TODO: How to make this val?
 @Component
-@ConfigurationProperties(prefix = "kubernetes")
+@ConfigurationProperties("kubernetes")
 data class KubnernetesClientConfiguration(
-    val url: String = "http://kubernetes.default.svc.cluster.local",
-    val retry: KubernetesRetryConfiguration,
-    val timeout: HttpClientTimeoutConfiguration,
-    val tokenLoation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    var url: String = "http://kubernetes.default.svc.cluster.local",
+    var retry: KubernetesRetryConfiguration,
+    var timeout: HttpClientTimeoutConfiguration,
+    var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 ) {
 
     fun createUserAccountReactorClient(
@@ -72,7 +73,7 @@ data class KubnernetesClientConfiguration(
     ): KubernetesReactorClient.Builder {
         val tcpClient = tcpClient(trustStore)
         val webClient = kubernetesWebClient(builder, tcpClient)
-        val token = File(tokenLoation).readText().trim()
+        val token = File(tokenLocation).readText().trim()
         return KubernetesReactorClient.Builder(
             webClient,
             object : TokenFetcher {
@@ -124,15 +125,15 @@ data class KubnernetesClientConfiguration(
 }
 
 data class HttpClientTimeoutConfiguration(
-    val connect: Duration = Duration.ofSeconds(1),
-    val read: Duration = Duration.ofSeconds(2),
-    val write: Duration = Duration.ofSeconds(2)
+    var connect: Duration = Duration.ofSeconds(2),
+    var read: Duration = Duration.ofSeconds(2),
+    var write: Duration = Duration.ofSeconds(2)
 )
 
 data class KubernetesRetryConfiguration(
-    val times: Long = 3L,
-    val min: Duration = Duration.ofMillis(100),
-    val max: Duration = Duration.ofSeconds(1)
+    var times: Long = 3L,
+    var min: Duration = Duration.ofMillis(100),
+    var max: Duration = Duration.ofSeconds(1)
 )
 
 @Configuration
@@ -192,7 +193,7 @@ class KubernetesClientConfig(
             HttpClient.create()
                 .baseUrl(config.url)
                 .headers { headers ->
-                    File(config.tokenLoation).takeIf { it.isFile }?.let {
+                    File(config.tokenLocation).takeIf { it.isFile }?.let {
                         headers.add(HttpHeaders.AUTHORIZATION, "Bearer ${it.readText()}")
                     }
 
