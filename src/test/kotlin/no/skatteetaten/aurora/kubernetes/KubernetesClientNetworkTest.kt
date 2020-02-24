@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.isFailure
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newProject
@@ -72,8 +73,8 @@ class KubernetesClientNetworkTest {
 
         server.execute(errorResponse) {
             runBlocking {
-                val project = client.get(newProject { })
-                assertThat(project).isNotNull()
+                val project = client.getOrNull(newProject { })
+                assertThat(project).isNull()
             }
         }
     }
