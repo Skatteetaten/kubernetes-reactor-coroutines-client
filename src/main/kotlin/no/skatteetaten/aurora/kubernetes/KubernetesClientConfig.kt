@@ -46,7 +46,7 @@ annotation class TargetClient(val value: ClientTypes)
 @Component
 @ConfigurationProperties(prefix = "kubernetes")
 data class KubnernetesClientConfiguration(
-    val url: String,
+    val url: String = "http://kubernetes.default.svc.cluster.local",
     val retry: KubernetesRetryConfiguration,
     val timeout: HttpClientTimeoutConfiguration,
     val tokenLoation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"

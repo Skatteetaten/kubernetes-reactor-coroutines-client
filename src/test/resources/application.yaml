@@ -1,17 +1,3 @@
-integrations:
-    kubernetes:
-        port: 8081
-    custom:
-        port: 8082
-
 spring:
     application:
         name: "test"
-
-kubernetes:
-    url: "http://foo"
-    tokenLocation: src/test/resources/test-token.txt
-    timeout:
-        read: 1s
-        retry:
-            times: 0
