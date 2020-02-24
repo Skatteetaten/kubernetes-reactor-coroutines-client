@@ -35,15 +35,14 @@ class KubernetesClientNetworkTest {
         url = url.toString()
     )
 
-    private val reactiveClient = config.createUserAccountReactorClient(
-        builder = WebClient.builder(),
-        trustStore = null,
-        tokenFetcher = object : TokenFetcher {
-            override fun token() = "test-token"
-        }
-    ).apply {
-        webClientBuilder.defaultHeaders("kubernetes-reactor-coroutines-client-test")
-    }.build()
+    private val reactiveClient = KubernetesClientConfig("client-test", config)
+        .kubernetesClientUserToken(
+            builder = WebClient.builder(),
+            trustStore = null,
+            tokenFetcher = object : TokenFetcher {
+                override fun token() = "test-token"
+            }
+        )
 
     private val client = KubernetesCoroutinesClient(reactiveClient)
 
