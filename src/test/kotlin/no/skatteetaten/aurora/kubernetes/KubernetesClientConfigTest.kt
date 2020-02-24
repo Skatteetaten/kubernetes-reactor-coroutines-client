@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Profile
 import org.springframework.web.reactive.function.client.WebClient
 
 @TestConfiguration
@@ -18,7 +19,8 @@ class TestConfig {
     fun webClientBuilder() = WebClient.builder()
 }
 
-@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
+@Profile("test")
+@SpringBootTest(classes = [TestConfig::class, KubnernetesClientConfiguration::class, KubernetesRetryConfiguration::class, HttpClientTimeoutConfiguration::class, KubernetesClientConfig::class])
 class KubernetesClientConfigTest {
     @Autowired
     private lateinit var client: KubernetesReactorClient
@@ -32,7 +34,7 @@ class KubernetesClientConfigTest {
     }
 }
 
-@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
+@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubnernetesClientConfiguration::class, KubernetesRetryConfiguration::class, HttpClientTimeoutConfiguration::class])
 class ServiceAccountConfigTest {
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     @Autowired
@@ -45,7 +47,7 @@ class ServiceAccountConfigTest {
     }
 }
 
-@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubernetesRetryConfiguration::class])
+@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class, KubnernetesClientConfiguration::class, KubernetesRetryConfiguration::class, HttpClientTimeoutConfiguration::class])
 class UserTokenConfigTest {
     @TargetClient(ClientTypes.USER_TOKEN)
     @Autowired

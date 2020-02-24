@@ -46,9 +46,9 @@ annotation class TargetClient(val value: ClientTypes)
 @Component
 @ConfigurationProperties(prefix = "kubernetes")
 data class KubnernetesClientConfiguration(
+    val url: String,
     val retry: KubernetesRetryConfiguration,
     val timeout: HttpClientTimeoutConfiguration,
-    val url: String,
     val tokenLoation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 ) {
 
@@ -190,13 +190,10 @@ class KubernetesClientConfig(
 
     @Bean
     @Qualifier("kubernetesClientWebClient")
-    fun kubernetesWebsocketClient(
-        @Qualifier("kubernetesClientWebClient") tcpClient: TcpClient,
-        @Value("\${kubernetes.url}") kubernetesUrl: String
-    ): ReactorNettyWebSocketClient {
+    fun kubernetesWebsocketClient(): ReactorNettyWebSocketClient {
         return ReactorNettyWebSocketClient(
             HttpClient.create()
-                .baseUrl(kubernetesUrl)
+                .baseUrl(config.url)
                 .headers { headers ->
                     File(config.tokenLoation).takeIf { it.isFile }?.let {
                         headers.add(HttpHeaders.AUTHORIZATION, "Bearer ${it.readText()}")
@@ -213,9 +210,10 @@ class KubernetesClientConfig(
     @Qualifier("kubernetesClientWebClient")
     fun kuberntesLocalKeyStore(): KeyStore? = null
 
+    //TODO: how to fix this for testing?
     @Bean
     @Primary
-    @Profile("!local")
+    @Profile("openshift")
     @Qualifier("kubernetesClientWebClient")
     fun kubernetesSSLContext(@Value("\${trust.store}") trustStoreLocation: String): KeyStore =
         KeyStore.getInstance(KeyStore.getDefaultType())?.let { ks ->

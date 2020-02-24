@@ -29,6 +29,7 @@ import io.fabric8.openshift.api.model.Route
 import kotlinx.coroutines.runBlocking
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
+import no.skatteetaten.aurora.kubernetes.testutils.KUBERNETES_URL
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
@@ -36,14 +37,28 @@ import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.testWebClient
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.springframework.web.reactive.function.client.WebClient
 
 @DisableIfJenkins
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
+    private val config = KubnernetesClientConfiguration(
+        retry = KubernetesRetryConfiguration(0),
+        timeout = HttpClientTimeoutConfiguration(),
+        url = KUBERNETES_URL
+    )
 
-    private val client =
-        KubernetesReactorClient.create(testWebClient(), kubernetesToken(), KubernetesRetryConfiguration(times = 0))
+    val foo = testWebClient()
+    private val client = config.createUserAccountReactorClient(
+        builder = WebClient.builder(),
+        trustStore = null,
+        tokenFetcher = object : TokenFetcher {
+            override fun token() = kubernetesToken()
+        },
+        applicationName = "kubernetes-reactor-coroutines-client-test"
+    )
+
     private val kubernetesClient = KubernetesCoroutinesClient(client)
 
     @Test
@@ -258,13 +273,13 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-    //@Disabled("add name before running test")
+    @Disabled("add name before running test")
     @Test
     fun `Delete application deployment`() {
         runBlocking {
             val deleted = kubernetesClient.deleteForeground(newApplicationDeployment {
                 metadata {
-                    name = "k82814-gobo"
+                    name = ""
                     namespace = NAMESPACE_DEV
                 }
             }, newDeleteOptions { })

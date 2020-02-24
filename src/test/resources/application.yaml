@@ -4,7 +4,14 @@ integrations:
     custom:
         port: 8082
 
+spring:
+    application:
+        name: "test"
+
 kubernetes:
+    url: "http://foo"
     tokenLocation: src/test/resources/test-token.txt
-    retry:
-        times: 0
+    timeout:
+        read: 1s
+        retry:
+            times: 0
