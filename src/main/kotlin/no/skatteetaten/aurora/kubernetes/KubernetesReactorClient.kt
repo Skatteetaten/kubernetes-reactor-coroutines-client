@@ -26,7 +26,14 @@ class KubernetesReactorClient(
     val tokenFetcher: TokenFetcher,
     val retryConfiguration: KubernetesRetryConfiguration
 ) {
+    class Builder(
+        val webClientBuilder: WebClient.Builder,
+        val tokenFetcher: TokenFetcher,
+        val retryConfiguration: KubernetesRetryConfiguration
+    ) {
 
+        fun build() = KubernetesReactorClient(webClientBuilder.build(), tokenFetcher, retryConfiguration)
+    }
 
     fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Mono<Scale> {
         val dc = newDeploymentConfig {

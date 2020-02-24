@@ -55,12 +55,11 @@ data class KubnernetesClientConfiguration(
     fun createUserAccountReactorClient(
         builder: WebClient.Builder,
         trustStore: KeyStore?,
-        tokenFetcher: TokenFetcher,
-        applicationName: String
-    ): KubernetesReactorClient {
+        tokenFetcher: TokenFetcher
+    ): KubernetesReactorClient.Builder {
         val tcpClient = tcpClient(trustStore)
-        val webClient = kubernetesWebClient(builder, tcpClient, applicationName)
-        return KubernetesReactorClient(
+        val webClient = kubernetesWebClient(builder, tcpClient)
+        return KubernetesReactorClient.Builder(
             webClient,
             tokenFetcher,
             this.retry
@@ -69,13 +68,12 @@ data class KubnernetesClientConfiguration(
 
     fun createServiceAccountReactorClient(
         builder: WebClient.Builder,
-        trustStore: KeyStore?,
-        applicationName: String
-    ): KubernetesReactorClient {
+        trustStore: KeyStore?
+    ): KubernetesReactorClient.Builder {
         val tcpClient = tcpClient(trustStore)
-        val webClient = kubernetesWebClient(builder, tcpClient, applicationName)
+        val webClient = kubernetesWebClient(builder, tcpClient)
         val token = File(tokenLoation).readText().trim()
-        return KubernetesReactorClient(
+        return KubernetesReactorClient.Builder(
             webClient,
             object : TokenFetcher {
                 override fun token() = token
@@ -86,13 +84,11 @@ data class KubnernetesClientConfiguration(
 
     fun kubernetesWebClient(
         builder: WebClient.Builder,
-        tcpClient: TcpClient,
-        applicationName: String
-    ): WebClient {
+        tcpClient: TcpClient
+    ): WebClient.Builder {
         logger.debug("Kubernetes url=${url}")
         return builder
             .baseUrl(url)
-            .defaultHeaders(applicationName)
             .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
             .exchangeStrategies(
                 ExchangeStrategies.builder()
@@ -102,7 +98,6 @@ data class KubnernetesClientConfiguration(
                         }
                     }.build()
             )
-            .build()
     }
 
     fun tcpClient(
@@ -174,9 +169,9 @@ class KubernetesClientConfig(
     fun kubernetesClientServiceAccount(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
-    ): KubernetesReactorClient {
-        return config.createServiceAccountReactorClient(builder, trustStore, applicationName)
-    }
+    ) = config.createServiceAccountReactorClient(builder, trustStore).apply {
+            webClientBuilder.defaultHeaders(applicationName)
+        }.build()
 
     @Lazy(true)
     @Bean
@@ -186,7 +181,9 @@ class KubernetesClientConfig(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
         tokenFetcher: TokenFetcher
-    ) = config.createUserAccountReactorClient(builder, trustStore, tokenFetcher, applicationName)
+    ) = config.createUserAccountReactorClient(builder, trustStore, tokenFetcher).apply {
+        webClientBuilder.defaultHeaders(applicationName)
+    }.build()
 
     @Bean
     @Qualifier("kubernetesClientWebClient")
@@ -226,7 +223,7 @@ class KubernetesClientConfig(
         } ?: throw Exception("KeyStore getInstance did not return KeyStore")
 }
 
-private fun WebClient.Builder.defaultHeaders(applicationName: String) = this
+fun WebClient.Builder.defaultHeaders(applicationName: String) = this
     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
     .defaultHeader("User-Agent", applicationName)
 
