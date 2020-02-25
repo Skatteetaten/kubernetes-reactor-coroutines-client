@@ -34,14 +34,7 @@ class KubernetesClientNetworkTest {
         url = url.toString()
     )
 
-    private val reactiveClient = KubernetesClientConfig("client-test", config)
-        .kubernetesClientUserToken(
-            builder = WebClient.builder(),
-            trustStore = null,
-            tokenFetcher = object : TokenFetcher {
-                override fun token() = "test-token"
-            }
-        )
+    private val reactiveClient = config.createTestClient("test-token")
 
     private val client = KubernetesCoroutinesClient(reactiveClient)
 
