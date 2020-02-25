@@ -1,6 +1,7 @@
 package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
+import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
@@ -18,20 +19,21 @@ import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newImageStreamTag
 import com.fkorotkov.openshift.newProject
 import com.fkorotkov.openshift.newRoute
+import io.fabric8.kubernetes.api.model.KubernetesList
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.PodList
-import io.fabric8.kubernetes.api.model.ReplicationControllerList
-import io.fabric8.kubernetes.api.model.ServiceList
-import io.fabric8.openshift.api.model.ProjectList
+import io.fabric8.kubernetes.api.model.ReplicationController
+import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.internal.KubernetesDeserializer
+import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.api.model.Route
 import kotlinx.coroutines.runBlocking
-import no.skatteetaten.aurora.kubernetes.crd.newSkatteetatenKubernetesResource
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
+import no.skatteetaten.aurora.kubernetes.testutils.KUBERNETES_URL
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
 import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
-import no.skatteetaten.aurora.kubernetes.testutils.testWebClient
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
@@ -39,12 +41,20 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val kubernetesClient = KubernetesClient.create(testWebClient(), kubernetesToken())
+    private val config = KubnernetesClientConfiguration(
+        retry = KubernetesRetryConfiguration(0),
+        timeout = HttpClientTimeoutConfiguration(),
+        url = KUBERNETES_URL
+    )
+
+    private val client = config.createTestClient(kubernetesToken())
+
+    private val kubernetesClient = KubernetesCoroutinesClient(client)
 
     @Test
     fun `Get projects`() {
         runBlocking {
-            val projects: ProjectList = kubernetesClient.getList(newProject { })
+            val projects: List<Project> = kubernetesClient.getMany(newProject { })
             val project = kubernetesClient.get(newProject { metadata { name = NAMESPACE } })
 
             assertThat(projects).isNotNull()
@@ -55,9 +65,12 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get projects with label`() {
         runBlocking {
-            val projects: ProjectList =
-                kubernetesClient.getList(newProject { metadata { labels = newLabel("removeAfter") } })
+            val projects: List<Project> =
+                kubernetesClient.getMany(newProject { metadata { labels = newLabel("removeAfter") } })
 
+            projects.forEach {
+                assertThat(it.metadata.labels.containsKey("removeAfter")).isTrue()
+            }
             assertThat(projects).isNotNull()
         }
     }
@@ -65,7 +78,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get routes`() {
         runBlocking {
-            val routes = kubernetesClient.getList(newRoute { metadata { namespace = NAMESPACE } })
+            val routes: List<Route> = kubernetesClient.getMany(newRoute { metadata { namespace = NAMESPACE } })
             val route = kubernetesClient.get(
                 newRoute {
                     metadata {
@@ -95,23 +108,26 @@ class KubernetesUserTokenClientIntegrationTest {
 
     @Test
     fun `Get application deployments`() {
+
+        KubernetesDeserializer.registerCustomKind(
+            "skatteetaten.no/v1",
+            "ApplicationDeploymentList",
+            KubernetesList::class.java
+        )
+
+        KubernetesDeserializer.registerCustomKind(
+            "skatteetaten.no/v1",
+            "ApplicationDeployment",
+            ApplicationDeployment::class.java
+        )
+        val ad = newApplicationDeployment {
+            metadata {
+                this.namespace = NAMESPACE
+            }
+        }
+
         runBlocking {
-            val ad: ApplicationDeployment =
-                kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
-                    metadata {
-                        namespace = NAMESPACE
-                        name = NAME
-                    }
-                })
-
-            val ads: ApplicationDeploymentList =
-                kubernetesClient.getResource(newSkatteetatenKubernetesResource<ApplicationDeployment> {
-                    metadata {
-                        namespace = NAMESPACE
-                    }
-                })
-
-            assertThat(ad).isNotNull()
+            val ads = kubernetesClient.getMany(ad)
             assertThat(ads).isNotNull()
         }
     }
@@ -119,10 +135,9 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get services`() {
         runBlocking {
-            val services: ServiceList = kubernetesClient.getList(newService {
+            val services: List<Service> = kubernetesClient.getMany(newService {
                 metadata = newObjectMeta {
                     namespace = NAMESPACE
-                    name = NAME
                 }
             })
             assertThat(services).isNotNull()
@@ -132,28 +147,28 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get pods`() {
         runBlocking {
-            val pods: PodList = kubernetesClient.getList(newPod {
+            val pods: List<Pod> = kubernetesClient.getMany(newPod {
                 metadata {
                     namespace = NAMESPACE
-                }
-            })
-
-            val pods2: PodList = kubernetesClient.getList(newPod {
-                metadata {
-                    namespace = NAMESPACE
-                    name = pods.items.first().metadata.name
                 }
             })
 
             assertThat(pods).isNotNull()
-            assertThat(pods2).isNotNull()
+        }
+    }
+
+    @Test
+    fun `Get pods with metadata`() {
+        runBlocking {
+            val pods: List<Pod> = kubernetesClient.getMany(newObjectMeta { namespace = NAMESPACE })
+            assertThat(pods).isNotNull()
         }
     }
 
     @Test
     fun `Get replication controllers`() {
         runBlocking {
-            val rcs: ReplicationControllerList = kubernetesClient.getList(newReplicationController {
+            val rcs: List<ReplicationController> = kubernetesClient.getMany(newReplicationController {
                 metadata {
                     namespace = NAMESPACE
                 }
@@ -162,7 +177,7 @@ class KubernetesUserTokenClientIntegrationTest {
             val rc = kubernetesClient.get(newReplicationController {
                 metadata {
                     namespace = NAMESPACE
-                    name = rcs.items.first().metadata.name
+                    name = rcs.first().metadata.name
                 }
             })
 
@@ -213,12 +228,12 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `proxy pod`() {
         runBlocking {
-            val pod: Pod = kubernetesClient.getList(newPod {
+            val pod: Pod = kubernetesClient.getMany(newPod {
                 metadata {
                     namespace = NAMESPACE
                     labels = mapOf("app" to NAME)
                 }
-            }).items.first()
+            }).first()
 
             val result: JsonNode = kubernetesClient.proxyGet(
                 pod = pod,
@@ -234,7 +249,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Roll out deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE_DEV, "")
+            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE, "")
             assertThat(dc).isNotNull()
         }
     }
@@ -243,7 +258,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Scale deployment config`() {
         runBlocking {
-            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE_DEV, "", 2)
+            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE, "", 2)
             assertThat(s).isNotNull()
         }
     }
@@ -252,16 +267,29 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment`() {
         runBlocking {
-            val deleted = kubernetesClient.delete(newSkatteetatenKubernetesResource<ApplicationDeployment> {
+            val deleted = kubernetesClient.deleteForeground(newApplicationDeployment {
                 metadata {
                     name = ""
                     namespace = NAMESPACE_DEV
                 }
-            }, newDeleteOptions {
-                propagationPolicy = "Background"
+            }, newDeleteOptions { })
+
+            assertThat(deleted).isNotNull()
+        }
+    }
+
+    @Disabled("add name before running test")
+    @Test
+    fun `Delete application deployment without options`() {
+        runBlocking {
+            val deleted = kubernetesClient.deleteBackground(newApplicationDeployment {
+                metadata {
+                    name = ""
+                    namespace = NAMESPACE_DEV
+                }
             })
 
-            assertThat(deleted).isTrue()
+            assertThat(deleted.status).isEqualTo("Success")
         }
     }
 }
