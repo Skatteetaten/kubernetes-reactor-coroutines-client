@@ -14,7 +14,9 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.util.UriBuilder
 import reactor.core.publisher.Mono
+import reactor.netty.http.client.PrematureCloseException
 import reactor.retry.Retry
+import reactor.retry.RetryContext
 
 class ResourceNotFoundException(m: String) : RuntimeException(m)
 
@@ -135,9 +137,7 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
         return this
     }
 
-    return this.retryWhen(Retry.onlyIf<Mono<T>> {
-        it.exception() is WebClientResponseException && (it.exception() as WebClientResponseException).statusCode.is5xxServerError
-    }
+    return this.retryWhen(Retry.onlyIf<Mono<T>> { it.isServerError() || it.isPrematureCloseException() }
         .exponentialBackoff(retryConfiguration.min, retryConfiguration.max)
         .retryMax(retryConfiguration.times)
         .doOnRetry {
@@ -154,6 +154,11 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
         }
     )
 }
+
+fun <T> RetryContext<Mono<T>>.isServerError() =
+    this.exception() is WebClientResponseException && (this.exception() as WebClientResponseException).statusCode.is5xxServerError
+
+fun <T> RetryContext<Mono<T>>.isPrematureCloseException() = this.exception() is PrematureCloseException
 
 fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?): UriBuilder {
     if (label.isNullOrEmpty()) return this

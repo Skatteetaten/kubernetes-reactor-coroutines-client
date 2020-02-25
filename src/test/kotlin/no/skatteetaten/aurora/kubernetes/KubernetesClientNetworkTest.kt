@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import no.skatteetaten.aurora.mockmvc.extensions.mockwebserver.execute
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -41,6 +42,21 @@ class KubernetesClientNetworkTest {
     @AfterEach
     fun tearDown() {
         server.shutdown()
+    }
+
+    @Test
+    fun `Retry on read timeout`() {
+        val errorResponse = MockResponse().json().apply {
+            socketPolicy = SocketPolicy.DISCONNECT_AFTER_REQUEST
+        }
+        val okResponse = MockResponse().json(newProject { })
+
+        server.execute(errorResponse, okResponse) {
+            runBlocking {
+                val project = client.get(newProject { })
+                assertThat(project).isNotNull()
+            }
+        }
     }
 
     @ParameterizedTest
