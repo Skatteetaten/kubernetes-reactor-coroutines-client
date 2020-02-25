@@ -36,7 +36,6 @@ import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
 import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.springframework.web.reactive.function.client.WebClient
 
 @DisableIfJenkins
 @EnabledIfKubernetesToken
@@ -48,15 +47,7 @@ class KubernetesUserTokenClientIntegrationTest {
         url = KUBERNETES_URL
     )
 
-    private val client = config.createUserAccountReactorClient(
-        builder = WebClient.builder(),
-        trustStore = null,
-        tokenFetcher = object : TokenFetcher {
-            override fun token() = kubernetesToken()
-        }
-    ).apply {
-        webClientBuilder.defaultHeaders("kubernetes-reactor-coroutines-client-test")
-    }.build()
+    private val client = config.createTestClient(kubernetesToken())
 
     private val kubernetesClient = KubernetesCoroutinesClient(client)
 

@@ -83,6 +83,10 @@ interface TokenFetcher {
     fun token(): String
 }
 
+class StringTokenFetcher(val token: String) : TokenFetcher {
+    override fun token() = token
+}
+
 fun HasMetadata.uriVariables() = mapOf(
     "namespace" to this.metadata?.namespace,
     "kind" to this.kind.toLowerCase().plurlize(),

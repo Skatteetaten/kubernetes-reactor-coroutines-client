@@ -43,7 +43,6 @@ enum class ClientTypes {
 @Qualifier
 annotation class TargetClient(val value: ClientTypes)
 
-//TODO: How to make this val?
 @Component
 @ConfigurationProperties("kubernetes")
 data class KubnernetesClientConfiguration(
@@ -52,6 +51,15 @@ data class KubnernetesClientConfiguration(
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 ) {
+
+    fun createTestClient(token: String, userAgent: String = "test-client") =
+        createUserAccountReactorClient(
+            builder = WebClient.builder(),
+            trustStore = null,
+            tokenFetcher = StringTokenFetcher(token)
+        ).apply {
+            webClientBuilder.defaultHeaders(userAgent)
+        }.build()
 
     fun createUserAccountReactorClient(
         builder: WebClient.Builder,
@@ -76,9 +84,7 @@ data class KubnernetesClientConfiguration(
         val token = File(tokenLocation).readText().trim()
         return KubernetesReactorClient.Builder(
             webClient,
-            object : TokenFetcher {
-                override fun token() = token
-            },
+            StringTokenFetcher(token),
             retry
         )
     }
@@ -124,6 +130,7 @@ data class KubnernetesClientConfiguration(
     }
 }
 
+// TOOD: what should default values be here?
 data class HttpClientTimeoutConfiguration(
     var connect: Duration = Duration.ofSeconds(2),
     var read: Duration = Duration.ofSeconds(2),
@@ -171,8 +178,8 @@ class KubernetesClientConfig(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
     ) = config.createServiceAccountReactorClient(builder, trustStore).apply {
-            webClientBuilder.defaultHeaders(applicationName)
-        }.build()
+        webClientBuilder.defaultHeaders(applicationName)
+    }.build()
 
     @Lazy(true)
     @Bean
@@ -201,7 +208,6 @@ class KubernetesClientConfig(
                 }
         )
     }
-
 
     @Bean
     @Profile("local")
