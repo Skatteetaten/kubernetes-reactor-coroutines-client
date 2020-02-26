@@ -46,7 +46,7 @@ annotation class TargetClient(val value: ClientTypes)
 @Component
 @ConfigurationProperties("kubernetes")
 data class KubnernetesClientConfiguration(
-    var url: String = "http://kubernetes.default.svc.cluster.local",
+    var url: String = "https://kubernetes.default.svc.cluster.local",
     var retry: KubernetesRetryConfiguration,
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -133,8 +133,8 @@ data class KubnernetesClientConfiguration(
 // TOOD: what should default values be here?
 data class HttpClientTimeoutConfiguration(
     var connect: Duration = Duration.ofSeconds(2),
-    var read: Duration = Duration.ofSeconds(2),
-    var write: Duration = Duration.ofSeconds(2)
+    var read: Duration = Duration.ofSeconds(5),
+    var write: Duration = Duration.ofSeconds(5)
 )
 
 data class KubernetesRetryConfiguration(
