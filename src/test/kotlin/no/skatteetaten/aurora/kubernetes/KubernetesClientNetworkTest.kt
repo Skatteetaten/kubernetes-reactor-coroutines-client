@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -44,10 +45,14 @@ class KubernetesClientNetworkTest {
         server.shutdown()
     }
 
-    @Test
-    fun `Retry on read timeout`() {
+    @ParameterizedTest
+    @EnumSource(
+        value = SocketPolicy::class,
+        names = ["DISCONNECT_AT_START", "DISCONNECT_AFTER_REQUEST", "NO_RESPONSE"]
+    )
+    fun `Retry on read timeout`(socketPolicy: SocketPolicy) {
         val errorResponse = MockResponse().json().apply {
-            socketPolicy = SocketPolicy.DISCONNECT_AFTER_REQUEST
+            this.socketPolicy = socketPolicy
         }
         val okResponse = MockResponse().json(newProject { })
 
@@ -55,6 +60,26 @@ class KubernetesClientNetworkTest {
             runBlocking {
                 val project = client.get(newProject { })
                 assertThat(project).isNotNull()
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = SocketPolicy::class,
+        mode = EnumSource.Mode.EXCLUDE,
+        names = ["DISCONNECT_AT_START", "DISCONNECT_AFTER_REQUEST", "STALL_SOCKET_AT_START", "NO_RESPONSE"]
+    )
+    fun `Throw ResourceNotFound on network problems returning no values`(socketPolicy: SocketPolicy) {
+        val errorResponse = MockResponse().json().apply {
+            this.socketPolicy = socketPolicy
+        }
+
+        server.execute(errorResponse) {
+            runBlocking {
+                assertThat {
+                    client.get(newProject { })
+                }.isFailure().isInstanceOf(ResourceNotFoundException::class)
             }
         }
     }

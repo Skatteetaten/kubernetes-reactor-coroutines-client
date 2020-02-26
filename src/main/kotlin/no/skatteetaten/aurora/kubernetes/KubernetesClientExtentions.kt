@@ -7,6 +7,7 @@ import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
+import io.netty.handler.timeout.ReadTimeoutException
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -44,10 +45,8 @@ fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(
         }
     }
 
-    return this.uri {
-        it.path(createUrl(metadata, resource.apiVersion))
-            .addQueryParamIfExist(labels)
-            .build(resource.uriVariables())
+    return this.uri(createUrl(metadata, resource.apiVersion)) {
+        it.addQueryParamIfExist(labels).build(resource.uriVariables())
     }
 }
 
@@ -137,7 +136,9 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
         return this
     }
 
-    return this.retryWhen(Retry.onlyIf<Mono<T>> { it.isServerError() || it.isPrematureCloseException() }
+    return this.retryWhen(Retry.onlyIf<Mono<T>> {
+        it.isServerError() || it.isTimeout()
+    }
         .exponentialBackoff(retryConfiguration.min, retryConfiguration.max)
         .retryMax(retryConfiguration.times)
         .doOnRetry {
@@ -158,7 +159,8 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
 fun <T> RetryContext<Mono<T>>.isServerError() =
     this.exception() is WebClientResponseException && (this.exception() as WebClientResponseException).statusCode.is5xxServerError
 
-fun <T> RetryContext<Mono<T>>.isPrematureCloseException() = this.exception() is PrematureCloseException
+fun <T> RetryContext<Mono<T>>.isTimeout() =
+    this.exception() is PrematureCloseException || this.exception() is ReadTimeoutException
 
 fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?): UriBuilder {
     if (label.isNullOrEmpty()) return this
