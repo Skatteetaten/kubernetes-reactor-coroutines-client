@@ -14,6 +14,7 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
+import mu.KotlinLogging
 import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -26,6 +27,9 @@ class KubernetesReactorClient(
     val tokenFetcher: TokenFetcher,
     val retryConfiguration: KubernetesRetryConfiguration
 ) {
+
+    val logger = KotlinLogging.logger {}
+
     class Builder(
         val webClientBuilder: WebClient.Builder,
         val tokenFetcher: TokenFetcher,
@@ -105,21 +109,37 @@ class KubernetesReactorClient(
                     "path" to if (path.startsWith("/")) path else "/$path"
                 )
             )
-            .perform()
+            .perform<T>(true).doOnError {
+                logger.debug(
+                    "Error occured for proxyGet type=${it.javaClass.simpleName} kind=${pod.kind} namespace=${pod.metadata.namespace} name=${pod.metadata.name} path=$path message=${it.message}"
+                )
+            }
     }
 
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
-        return webClient.get().kubernetesUri(resource).perform()
+        return webClient.get().kubernetesUri(resource).perform<Kind>().doOnError {
+            logger.debug(
+                "Error occured for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata.namespace} name=${resource.metadata.name} message=${it.message}"
+            )
+        }
     }
 
     inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Mono<Output> {
-        return webClient.get().kubernetesUri(resource).perform()
+        return webClient.get().kubernetesUri(resource).perform<Output>().doOnError {
+            logger.debug(
+                "Error occured for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata.namespace} name=${resource.metadata.name} message=${it.message}"
+            )
+        }
     }
 
     inline fun <reified Kind : HasMetadata> getMany(resource: Kind): Mono<List<Kind>> {
         return webClient.get()
             .kubernetesListUri(resource)
-            .perform<KubernetesResourceList<Kind>>()
+            .perform<KubernetesResourceList<Kind>>().doOnError {
+                logger.debug(
+                    "Error occured for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata.namespace} name=${resource.metadata.name} message=${it.message}"
+                )
+            }
             .map { it.items }
     }
 
@@ -155,18 +175,21 @@ class KubernetesReactorClient(
             .perform()
     }
 
-    inline fun <reified Kind : HasMetadata> deleteBackground(resource: Kind, deleteOptions: DeleteOptions? = null): Mono<Status> {
+    inline fun <reified Kind : HasMetadata> deleteBackground(
+        resource: Kind,
+        deleteOptions: DeleteOptions? = null
+    ): Mono<Status> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Background"))
             .perform()
     }
 
-    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform() =
+    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform(proxy: Boolean = false) =
         this.bearerToken(tokenFetcher.token())
             .retrieve()
             .bodyToMono<T>()
             .notFoundAsEmpty()
-            .retryWithLog(retryConfiguration)
+            .retryWithLog(retryConfiguration, proxy)
 }
 
 class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, private val metadata: ObjectMeta?) :

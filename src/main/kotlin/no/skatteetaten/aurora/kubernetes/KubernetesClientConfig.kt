@@ -96,7 +96,7 @@ data class KubnernetesClientConfiguration(
         logger.debug("Kubernetes url=${url}")
         return builder
             .baseUrl(url)
-            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
+            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient)))
             .exchangeStrategies(
                 ExchangeStrategies.builder()
                     .codecs {
