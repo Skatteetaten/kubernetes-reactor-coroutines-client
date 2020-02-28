@@ -101,21 +101,17 @@ class KubernetesReactorClient(
 
     inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String, headers:Map<String, String> = emptyMap()): Mono<T> {
         return webClient.get().kubernetesUri(
-                resource = pod,
-                uriSuffix = ":{port}/proxy{path}",
-                additionalUriVariables = mapOf(
-                    "port" to port.toString(),
-                    "path" to if (path.startsWith("/")) path else "/$path"
-                )
-            ).headers { h ->
-                headers.forEach {
-                    h.add(it.key, it.value)
-                }
-            }.perform<T>(true).doOnError {
-                logger.debug(
-                    "Error occured for proxyGet type=${it.javaClass.simpleName} kind=${pod.kind} namespace=${pod.metadata.namespace} name=${pod.metadata.name} path=$path message=${it.message}"
-                )
+            resource = pod,
+            uriSuffix = ":{port}/proxy{path}",
+            additionalUriVariables = mapOf(
+                "port" to port.toString(),
+                "path" to if (path.startsWith("/")) path else "/$path"
+            )
+        ).headers { h ->
+            headers.forEach {
+                h.add(it.key, it.value)
             }
+        }.perform<T>(true)
     }
 
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
