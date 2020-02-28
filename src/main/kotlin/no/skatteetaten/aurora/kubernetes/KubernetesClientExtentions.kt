@@ -137,7 +137,7 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
     }
 
     return this.retryWhen(Retry.onlyIf<Mono<T>> {
-        it.isServerError() || it.isTimeout()
+        it.isServerError() || it.exception() !is WebClientResponseException
     }
         .exponentialBackoff(retryConfiguration.min, retryConfiguration.max)
         .retryMax(retryConfiguration.times)
@@ -158,9 +158,6 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
 
 fun <T> RetryContext<Mono<T>>.isServerError() =
     this.exception() is WebClientResponseException && (this.exception() as WebClientResponseException).statusCode.is5xxServerError
-
-fun <T> RetryContext<Mono<T>>.isTimeout() =
-    this.exception() is PrematureCloseException || this.exception() is ReadTimeoutException
 
 fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?): UriBuilder {
     if (label.isNullOrEmpty()) return this
