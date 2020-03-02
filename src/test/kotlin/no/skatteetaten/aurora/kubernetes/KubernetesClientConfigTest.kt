@@ -22,7 +22,7 @@ class TestConfig {
     fun kubeConfig() =
         KubnernetesClientConfiguration(
             KUBERNETES_URL,
-            KubernetesRetryConfiguration(times = 0),
+            RetryConfiguration(times = 0),
             HttpClientTimeoutConfiguration(),
             tokenLocation = "src/test/resources/test-token.txt"
         )

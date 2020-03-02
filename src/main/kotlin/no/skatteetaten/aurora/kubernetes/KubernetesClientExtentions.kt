@@ -130,15 +130,15 @@ fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
 }
 
 fun <T> Mono<T>.retryWithLog(
-    retryConfiguration: KubernetesRetryConfiguration,
-    proxy: Boolean = false
+    retryConfiguration: RetryConfiguration,
+    ignoreAllWebClientResponseException: Boolean = false
 ): Mono<T> {
     if (retryConfiguration.times == 0L) {
         return this
     }
 
     return this.retryWhen(Retry.onlyIf<Mono<T>> {
-        if (proxy) {
+        if (ignoreAllWebClientResponseException) {
             it.exception() !is WebClientResponseException
         } else {
             it.isServerError() || it.exception() !is WebClientResponseException

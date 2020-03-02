@@ -25,7 +25,7 @@ import kotlin.reflect.full.createInstance
 class KubernetesReactorClient(
     val webClient: WebClient,
     val tokenFetcher: TokenFetcher,
-    val retryConfiguration: KubernetesRetryConfiguration
+    val retryConfiguration: RetryConfiguration
 ) {
 
     val logger = KotlinLogging.logger {}
@@ -33,7 +33,7 @@ class KubernetesReactorClient(
     class Builder(
         val webClientBuilder: WebClient.Builder,
         val tokenFetcher: TokenFetcher,
-        val retryConfiguration: KubernetesRetryConfiguration
+        val retryConfiguration: RetryConfiguration
     ) {
 
         fun build() = KubernetesReactorClient(webClientBuilder.build(), tokenFetcher, retryConfiguration)

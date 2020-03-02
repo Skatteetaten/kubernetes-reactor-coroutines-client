@@ -31,7 +31,7 @@ class KubernetesClientNetworkTest {
     private val url = server.url("/")
 
     private val config = KubnernetesClientConfiguration(
-        retry = KubernetesRetryConfiguration(),
+        retry = RetryConfiguration(),
         timeout = HttpClientTimeoutConfiguration(),
         url = url.toString()
     )
