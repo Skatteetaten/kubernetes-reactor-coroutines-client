@@ -42,7 +42,9 @@ class KubernetesClientNetworkTest {
 
     @AfterEach
     fun tearDown() {
-        server.shutdown()
+        try {
+            server.shutdown()
+        } catch(ignored: Throwable) {}
     }
 
     @ParameterizedTest

@@ -117,7 +117,7 @@ class KubernetesReactorClient(
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
         return webClient.get().kubernetesUri(resource).perform<Kind>().doOnError {
             logger.debug(
-                "Error occured for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata.namespace} name=${resource.metadata.name} message=${it.message}"
+                "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
             )
         }
     }
@@ -125,7 +125,7 @@ class KubernetesReactorClient(
     inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Mono<Output> {
         return webClient.get().kubernetesUri(resource).perform<Output>().doOnError {
             logger.debug(
-                "Error occured for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata.namespace} name=${resource.metadata.name} message=${it.message}"
+                "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
             )
         }
     }
@@ -135,7 +135,7 @@ class KubernetesReactorClient(
             .kubernetesListUri(resource)
             .perform<KubernetesResourceList<Kind>>().doOnError {
                 logger.debug(
-                    "Error occured for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata.namespace} name=${resource.metadata.name} message=${it.message}"
+                    "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
                 )
             }
             .map { it.items }
