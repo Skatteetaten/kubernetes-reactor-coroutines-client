@@ -131,7 +131,7 @@ fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
 
 fun <T> Mono<T>.retryWithLog(
     retryConfiguration: KubernetesRetryConfiguration,
-    proxy: Boolean
+    proxy: Boolean = false
 ): Mono<T> {
     if (retryConfiguration.times == 0L) {
         return this
