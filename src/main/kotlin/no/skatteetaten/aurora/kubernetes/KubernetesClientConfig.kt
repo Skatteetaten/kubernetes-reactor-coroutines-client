@@ -47,7 +47,7 @@ annotation class TargetClient(val value: ClientTypes)
 @ConfigurationProperties("kubernetes")
 data class KubnernetesClientConfiguration(
     var url: String = "https://kubernetes.default.svc.cluster.local",
-    var retry: KubernetesRetryConfiguration,
+    var retry: RetryConfiguration,
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 ) {
@@ -96,7 +96,7 @@ data class KubnernetesClientConfiguration(
         logger.debug("Kubernetes url=${url}")
         return builder
             .baseUrl(url)
-            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient).compress(true)))
+            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient)))
             .exchangeStrategies(
                 ExchangeStrategies.builder()
                     .codecs {
@@ -130,14 +130,13 @@ data class KubnernetesClientConfiguration(
     }
 }
 
-// TOOD: what should default values be here?
 data class HttpClientTimeoutConfiguration(
     var connect: Duration = Duration.ofSeconds(2),
     var read: Duration = Duration.ofSeconds(5),
     var write: Duration = Duration.ofSeconds(5)
 )
 
-data class KubernetesRetryConfiguration(
+data class RetryConfiguration(
     var times: Long = 3L,
     var min: Duration = Duration.ofMillis(100),
     var max: Duration = Duration.ofSeconds(1)

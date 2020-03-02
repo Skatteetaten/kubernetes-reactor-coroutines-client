@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test
 class KubernetesUserTokenClientIntegrationTest {
 
     private val config = KubnernetesClientConfiguration(
-        retry = KubernetesRetryConfiguration(0),
+        retry = RetryConfiguration(0),
         timeout = HttpClientTimeoutConfiguration(),
         url = KUBERNETES_URL
     )

@@ -31,7 +31,7 @@ class KubernetesClientNetworkTest {
     private val url = server.url("/")
 
     private val config = KubnernetesClientConfiguration(
-        retry = KubernetesRetryConfiguration(),
+        retry = RetryConfiguration(),
         timeout = HttpClientTimeoutConfiguration(),
         url = url.toString()
     )
@@ -42,7 +42,9 @@ class KubernetesClientNetworkTest {
 
     @AfterEach
     fun tearDown() {
-        server.shutdown()
+        try {
+            server.shutdown()
+        } catch(ignored: Throwable) {}
     }
 
     @ParameterizedTest

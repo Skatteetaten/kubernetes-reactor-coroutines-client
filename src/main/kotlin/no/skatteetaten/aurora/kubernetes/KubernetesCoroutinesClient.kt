@@ -74,8 +74,13 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
     ): Input =
         client.deleteOrphan(resource, options).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String): T {
-        return client.proxyGet<T>(pod, port, path).awaitFirstOrNull()
+    suspend inline fun <reified T : Any> proxyGet(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String> = emptyMap()
+    ): T {
+        return client.proxyGet<T>(pod, port, path, headers).awaitFirstOrNull()
             ?: throw ResourceNotFoundException(notFoundMsg<T>(pod.metadata))
     }
 

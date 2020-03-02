@@ -7,7 +7,6 @@ import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
-import io.netty.handler.timeout.ReadTimeoutException
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -15,7 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.util.UriBuilder
 import reactor.core.publisher.Mono
-import reactor.netty.http.client.PrematureCloseException
 import reactor.retry.Retry
 import reactor.retry.RetryContext
 
@@ -124,25 +122,31 @@ fun newLabel(key: String, value: String) = mapOf(key to value)
 fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
     when (it) {
         is WebClientResponseException.NotFound -> {
-            logger.debug { "Resource not found, method=${it.request?.method} uri=${it.request?.uri} " }
+            logger.trace { "Resource not found, method=${it.request?.method} uri=${it.request?.uri} " }
             Mono.empty()
         }
         else -> Mono.error(it)
     }
 }
 
-fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): Mono<T> {
+fun <T> Mono<T>.retryWithLog(
+    retryConfiguration: RetryConfiguration,
+    ignoreAllWebClientResponseException: Boolean = false
+): Mono<T> {
     if (retryConfiguration.times == 0L) {
         return this
     }
 
     return this.retryWhen(Retry.onlyIf<Mono<T>> {
-        it.isServerError() || it.isTimeout()
+        if (ignoreAllWebClientResponseException) {
+            it.exception() !is WebClientResponseException
+        } else {
+            it.isServerError() || it.exception() !is WebClientResponseException
+        }
     }
         .exponentialBackoff(retryConfiguration.min, retryConfiguration.max)
         .retryMax(retryConfiguration.times)
         .doOnRetry {
-            //TODO: Should we log differently?
             logger.debug {
                 val e = it.exception()
                 val msg = "Retrying failed request times=${it.iteration()}, ${e.message}"
@@ -158,9 +162,6 @@ fun <T> Mono<T>.retryWithLog(retryConfiguration: KubernetesRetryConfiguration): 
 
 fun <T> RetryContext<Mono<T>>.isServerError() =
     this.exception() is WebClientResponseException && (this.exception() as WebClientResponseException).statusCode.is5xxServerError
-
-fun <T> RetryContext<Mono<T>>.isTimeout() =
-    this.exception() is PrematureCloseException || this.exception() is ReadTimeoutException
 
 fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?): UriBuilder {
     if (label.isNullOrEmpty()) return this
