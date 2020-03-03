@@ -89,13 +89,14 @@ class KubernetesReactorClient(
     }
 
     inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta): Mono<Kind> {
-        return webClient.get().kubernetesUri(TypedHasMetadata(Kind::class, metadata)).perform()
+        return webClient.get().kubernetesUri(TypedHasMetadata(Kind::class, metadata))
+            .perform(context = "get ${Kind::class.java}/${metadata.namespace}/${metadata.name}")
     }
 
     inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null): Mono<List<Kind>> {
         return webClient.get()
             .kubernetesListUri<HasMetadata>(TypedHasMetadata(Kind::class, metadata))
-            .perform<KubernetesResourceList<Kind>>()
+            .perform<KubernetesResourceList<Kind>>(context = "get many ${Kind::class.java}/${metadata?.namespace}")
             .map { it.items }
     }
 
@@ -111,29 +112,34 @@ class KubernetesReactorClient(
             headers.forEach {
                 h.add(it.key, it.value)
             }
-        }.perform<T>(true)
+        }.perform<T>(true, context = "Proxy ${pod.metadata.namespace}/${pod.metadata.name}:$port/$path")
     }
 
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
-        return webClient.get().kubernetesUri(resource).perform<Kind>().doOnError {
-            logger.debug(
-                "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
-            )
-        }
+        return webClient.get().kubernetesUri(resource)
+            .perform<Kind>(context = "get ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
+            .doOnError {
+                logger.debug(
+                    "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
+                )
+            }
     }
 
     inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input): Mono<Output> {
-        return webClient.get().kubernetesUri(resource).perform<Output>().doOnError {
-            logger.debug(
-                "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
-            )
-        }
+        return webClient.get().kubernetesUri(resource)
+            .perform<Output>(context = "get ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
+            .doOnError {
+                logger.debug(
+                    "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
+                )
+            }
     }
 
     inline fun <reified Kind : HasMetadata> getMany(resource: Kind): Mono<List<Kind>> {
         return webClient.get()
             .kubernetesListUri(resource)
-            .perform<KubernetesResourceList<Kind>>().doOnError {
+            .perform<KubernetesResourceList<Kind>>(context = "get many ${resource.kind}/${resource.metadata.namespace}")
+            .doOnError {
                 logger.debug(
                     "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
                 )
@@ -144,13 +150,13 @@ class KubernetesReactorClient(
     inline fun <reified Kind : HasMetadata> post(resource: Kind, body: Any = resource): Mono<Kind> {
         return webClient.post()
             .kubernetesBodyUri(resource, body)
-            .perform<Kind>()
+            .perform<Kind>(context = "post ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
     }
 
     inline fun <reified Kind : HasMetadata> put(resource: Kind, body: Any = resource): Mono<Kind> {
         return webClient.put()
             .kubernetesBodyUri(resource, body)
-            .perform()
+            .perform(context = "put ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
     }
 
     //background=Status
@@ -161,7 +167,7 @@ class KubernetesReactorClient(
     ): Mono<Kind> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Foreground"))
-            .perform()
+            .perform(context = "delete foreground ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
     }
 
     inline fun <reified Kind : HasMetadata> deleteOrphan(
@@ -170,7 +176,7 @@ class KubernetesReactorClient(
     ): Mono<Kind> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Orphan"))
-            .perform()
+            .perform(context = "delete orphan ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
     }
 
     inline fun <reified Kind : HasMetadata> deleteBackground(
@@ -179,15 +185,18 @@ class KubernetesReactorClient(
     ): Mono<Status> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Background"))
-            .perform()
+            .perform(context = "delete background ${resource.kind}/${resource.metadata.namespace}/${resource.metadata.name}")
     }
 
-    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform(proxy: Boolean = false) =
+    inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform(
+        ignoreAllWebClientResponseException: Boolean = false,
+        context: String = ""
+    ) =
         this.bearerToken(tokenFetcher.token())
             .retrieve()
             .bodyToMono<T>()
             .notFoundAsEmpty()
-            .retryWithLog(retryConfiguration, proxy)
+            .retryWithLog(retryConfiguration, ignoreAllWebClientResponseException, context)
 }
 
 class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, private val metadata: ObjectMeta?) :
