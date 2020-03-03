@@ -131,7 +131,8 @@ fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
 
 fun <T> Mono<T>.retryWithLog(
     retryConfiguration: RetryConfiguration,
-    ignoreAllWebClientResponseException: Boolean = false
+    ignoreAllWebClientResponseException: Boolean = false,
+    context: String = ""
 ): Mono<T> {
     if (retryConfiguration.times == 0L) {
         return this
@@ -149,7 +150,8 @@ fun <T> Mono<T>.retryWithLog(
         .doOnRetry {
             logger.debug {
                 val e = it.exception()
-                val msg = "Retrying failed request times=${it.iteration()}, ${e.message}"
+                val msg =
+                    "Retrying failed request times=${it.iteration()}, context=${context} errorType=${e.javaClass.simpleName} errorMessage=${e.message}"
                 if (e is WebClientResponseException) {
                     "$msg, method=${e.request?.method} uri=${e.request?.uri}"
                 } else {
