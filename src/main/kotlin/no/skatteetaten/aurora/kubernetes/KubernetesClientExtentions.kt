@@ -139,7 +139,7 @@ fun <T> Mono<T>.retryWithLog(
     }
 
     return this.retryWhen(Retry.onlyIf<Mono<T>> {
-        logger.trace {
+        logger.trace(it.exception()) {
             val e = it.exception()
             "retryWhen called with exception ${e?.javaClass?.simpleName}, message: ${e?.message}"
         }
