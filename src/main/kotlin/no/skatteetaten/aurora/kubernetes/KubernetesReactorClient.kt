@@ -31,7 +31,11 @@ class KubernetesReactorClient(
     /**
      * Simplifies creation of client, mainly useful for tests
      */
-    constructor(baseUrl: String, token: String, retryConfiguration: RetryConfiguration = RetryConfiguration()) : this(
+    constructor(
+        baseUrl: String,
+        token: String,
+        retryConfiguration: RetryConfiguration = RetryConfiguration()
+    ) : this(
         WebClient.create(baseUrl),
         object : TokenFetcher {
             override fun token() = token

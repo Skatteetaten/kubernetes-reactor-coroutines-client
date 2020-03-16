@@ -26,17 +26,10 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
     /**
      * Simplifies creation of client, mainly useful for tests
      */
-    constructor(webClient: WebClient, tokenFetcher: TokenFetcher, retryConfiguration: RetryConfiguration) : this(
-        KubernetesReactorClient(webClient, tokenFetcher, retryConfiguration)
-    )
-
-    /**
-     * Simplifies creation of client, mainly useful for tests
-     */
     constructor(
         baseUrl: String,
         token: String,
-        retryConfiguration: RetryConfiguration
+        retryConfiguration: RetryConfiguration = RetryConfiguration()
     ) : this(
         KubernetesReactorClient(
             WebClient.create(baseUrl),
