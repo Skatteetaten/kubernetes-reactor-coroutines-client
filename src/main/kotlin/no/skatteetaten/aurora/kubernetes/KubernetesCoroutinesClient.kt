@@ -9,6 +9,7 @@ import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import org.springframework.web.reactive.function.client.WebClient
 
 /**
  * A version of the client that uses Kotlin Coroutines
@@ -21,6 +22,26 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
  * @param client An instance of the reactive client that is used to back this client.
  **/
 class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
+
+    /**
+     * Simplifies creation to client, mainly useful for tests
+     */
+    constructor(webClient: WebClient, tokenFetcher: TokenFetcher, retryConfiguration: RetryConfiguration) : this(
+        KubernetesReactorClient(webClient, tokenFetcher, retryConfiguration)
+    )
+
+    /**
+     * Simplifies creation to client, mainly useful for tests
+     */
+    constructor(
+        webClient: WebClient,
+        token: String,
+        retryConfiguration: RetryConfiguration = RetryConfiguration()
+    ) : this(
+        KubernetesReactorClient(webClient, object : TokenFetcher {
+            override fun token() = token
+        }, retryConfiguration)
+    )
 
     /**
      * Get a single resource with a given name or namespace
