@@ -24,23 +24,27 @@ import org.springframework.web.reactive.function.client.WebClient
 class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
 
     /**
-     * Simplifies creation to client, mainly useful for tests
+     * Simplifies creation of client, mainly useful for tests
      */
     constructor(webClient: WebClient, tokenFetcher: TokenFetcher, retryConfiguration: RetryConfiguration) : this(
         KubernetesReactorClient(webClient, tokenFetcher, retryConfiguration)
     )
 
     /**
-     * Simplifies creation to client, mainly useful for tests
+     * Simplifies creation of client, mainly useful for tests
      */
     constructor(
-        webClient: WebClient,
+        baseUrl: String,
         token: String,
-        retryConfiguration: RetryConfiguration = RetryConfiguration()
+        retryConfiguration: RetryConfiguration
     ) : this(
-        KubernetesReactorClient(webClient, object : TokenFetcher {
-            override fun token() = token
-        }, retryConfiguration)
+        KubernetesReactorClient(
+            WebClient.create(baseUrl),
+            object : TokenFetcher {
+                override fun token() = token
+            },
+            retryConfiguration
+        )
     )
 
     /**

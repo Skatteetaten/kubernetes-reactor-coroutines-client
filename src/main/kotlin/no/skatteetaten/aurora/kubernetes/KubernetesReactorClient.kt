@@ -28,6 +28,17 @@ class KubernetesReactorClient(
     val retryConfiguration: RetryConfiguration
 ) {
 
+    /**
+     * Simplifies creation of client, mainly useful for tests
+     */
+    constructor(baseUrl: String, token: String, retryConfiguration: RetryConfiguration = RetryConfiguration()) : this(
+        WebClient.create(baseUrl),
+        object : TokenFetcher {
+            override fun token() = token
+        },
+        retryConfiguration
+    )
+
     val logger = KotlinLogging.logger {}
 
     class Builder(
@@ -100,7 +111,12 @@ class KubernetesReactorClient(
             .map { it.items }
     }
 
-    inline fun <reified T : Any> proxyGet(pod: Pod, port: Int, path: String, headers:Map<String, String> = emptyMap()): Mono<T> {
+    inline fun <reified T : Any> proxyGet(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String> = emptyMap()
+    ): Mono<T> {
         return webClient.get().kubernetesUri(
             resource = pod,
             uriSuffix = ":{port}/proxy{path}",
