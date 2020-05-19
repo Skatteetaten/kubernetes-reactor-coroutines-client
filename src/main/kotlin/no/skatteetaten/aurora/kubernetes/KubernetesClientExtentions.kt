@@ -43,7 +43,7 @@ fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(
         }
     }
 
-    return this.uri(createUrl(metadata, resource.apiVersion)) {
+    return this.uri(createUrl(metadata, resource)) {
         it.addQueryParamIfExist(labels).build(resource.uriVariables())
     }
 }
@@ -61,7 +61,9 @@ fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
         this.header(HttpHeaders.AUTHORIZATION, "Bearer $token")
     } ?: this
 
-fun createUrl(metadata: ObjectMeta?, apiVersion: String): String {
+fun createUrl(metadata: ObjectMeta?, resource: HasMetadata): String {
+    val apiVersion = resource.apiVersion
+    val kind = resource.kindUri()
     val contextRoot = if (apiVersion == "v1") {
         "/api"
     } else {
@@ -69,11 +71,11 @@ fun createUrl(metadata: ObjectMeta?, apiVersion: String): String {
     }
 
     return if (metadata == null) {
-        "$contextRoot/${apiVersion}/{kind}"
+        "$contextRoot/$apiVersion/$kind"
     } else {
         metadata.namespace?.let {
-            "$contextRoot/${apiVersion}/namespaces/{namespace}/{kind}/{name}"
-        } ?: "$contextRoot/${apiVersion}/{kind}/{name}"
+            "$contextRoot/$apiVersion/namespaces/{namespace}/$kind/{name}"
+        } ?: "$contextRoot/$apiVersion/$kind/{name}"
     }
 }
 
@@ -88,7 +90,6 @@ class StringTokenFetcher(val token: String) : TokenFetcher {
 
 fun HasMetadata.uriVariables() = mapOf(
     "namespace" to this.metadata?.namespace,
-    "kind" to this.kind.toLowerCase().plurlize(),
     "name" to this.metadata?.name
 )
 
@@ -98,6 +99,8 @@ fun String.plurlize() = if (this.endsWith("s")) {
     "${this}s"
 }
 
+fun HasMetadata.kindUri() = this.kind.toLowerCase().plurlize()
+
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
         "/api"
@@ -106,11 +109,11 @@ fun HasMetadata.uri(): String {
     }
 
     return if (this.metadata == null) {
-        "$contextRoot/${this.apiVersion}/{kind}"
+        "$contextRoot/$apiVersion/${this.kindUri()}"
     } else {
         this.metadata.namespace?.let {
-            "$contextRoot/${this.apiVersion}/namespaces/{namespace}/{kind}/{name}"
-        } ?: "$contextRoot/${this.apiVersion}/{kind}/{name}"
+            "$contextRoot/$apiVersion/namespaces/{namespace}/${this.kindUri()}/{name}"
+        } ?: "$contextRoot/$apiVersion/${this.kindUri()}/{name}"
     }
 }
 

@@ -20,8 +20,8 @@ class KubernetesClientTest {
             }
         }
 
-        assertThat(ingress.uri()).isEqualTo("/apis/extensions/v1beta1/namespaces/{namespace}/{kind}/{name}")
-        assertThat(ingress.uriVariables()["kind"]).isEqualTo("ingresses")
+        assertThat(ingress.uri()).isEqualTo("/apis/extensions/v1beta1/namespaces/{namespace}/ingresses/{name}")
+        assertThat(ingress.uriVariables()["name"]).isEqualTo("boober")
     }
 
     @Test
@@ -33,8 +33,8 @@ class KubernetesClientTest {
             }
         }
 
-        assertThat(dc.uri()).isEqualTo("/apis/apps.openshift.io/v1/namespaces/{namespace}/{kind}/{name}")
-        assertThat(dc.uriVariables()["kind"]).isEqualTo("deploymentconfigs")
+        assertThat(dc.uri()).isEqualTo("/apis/apps.openshift.io/v1/namespaces/{namespace}/deploymentconfigs/{name}")
+        assertThat(dc.uriVariables()["name"]).isEqualTo("boober")
 
     }
 
@@ -46,12 +46,12 @@ class KubernetesClientTest {
             }
         }
 
-        assertThat(p.uri()).isEqualTo("/api/v1/{kind}/{name}")
+        assertThat(p.uri()).isEqualTo("/api/v1/pods/{name}")
     }
 
     @Test
     fun `Build Kubernetes uri without namespace and name`() {
         val s = newSelfSubjectAccessReview {}
-        assertThat(s.uri()).isEqualTo("/apis/authorization.k8s.io/v1/{kind}")
+        assertThat(s.uri()).isEqualTo("/apis/authorization.k8s.io/v1/selfsubjectaccessreviews")
     }
 }
