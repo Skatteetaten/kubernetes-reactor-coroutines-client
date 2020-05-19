@@ -127,6 +127,15 @@ fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
         else -> Mono.error(it)
     }
 }
+fun <T> Mono<T>.unauthorizedAsEmpty() = this.onErrorResume {
+    when (it) {
+        is WebClientResponseException.Unauthorized -> {
+            logger.trace { "Unauthorized, method=${it.request?.method} uri=${it.request?.uri} " }
+            Mono.empty()
+        }
+        else -> Mono.error(it)
+    }
+}
 
 fun <T> Mono<T>.retryWithLog(
     retryConfiguration: RetryConfiguration,

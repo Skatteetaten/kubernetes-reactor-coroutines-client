@@ -3,6 +3,7 @@ package no.skatteetaten.aurora.kubernetes
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
@@ -208,6 +209,20 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
+    @Test
+    fun `Get current user`() {
+        runBlocking {
+            val u = kubernetesClient.currentUser(kubernetesToken())
+            assertThat(u).isNotNull()
+        }
+    }
+    @Test
+    fun `Get current user null on invalid token`() {
+        runBlocking {
+            val u = kubernetesClient.currentUser("fail")
+            assertThat(u).isNull()
+        }
+    }
     @Test
     fun `Self subject access review`() {
         runBlocking {

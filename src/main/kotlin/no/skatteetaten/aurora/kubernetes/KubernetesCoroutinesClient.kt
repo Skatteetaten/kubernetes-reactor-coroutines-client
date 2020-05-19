@@ -5,6 +5,7 @@ import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.openshift.api.model.User
 import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
@@ -65,6 +66,8 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
     suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null): List<Kind> {
         return client.getMany<Kind>(metadata).awaitFirstOrNull() ?: emptyList()
     }
+
+    suspend fun currentUser(token:String) : User? = client.currentUser(token).awaitFirstOrNull()
 
     suspend inline fun <reified Input : HasMetadata> post(resource: Input): Input =
         client.post(resource).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)

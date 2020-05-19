@@ -8,6 +8,7 @@ import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.openshift.api.model.User
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
@@ -135,6 +136,19 @@ class KubernetesReactorClient(
         }.perform<T>(true, context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path")
     }
 
+
+    fun currentUser(token: String): Mono<User> {
+        val resource= newCurrentUser()
+        return webClient.get().kubernetesUri(newCurrentUser())
+            .perform<User>(context = "get current user", bearerToken = token)
+            .unauthorizedAsEmpty()
+            .doOnError {
+                logger.debug(
+                    "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
+                )
+            }
+    }
+
     inline fun <reified Kind : HasMetadata> get(resource: Kind): Mono<Kind> {
         return webClient.get().kubernetesUri(resource)
             .perform<Kind>(context = "get ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}")
@@ -210,9 +224,10 @@ class KubernetesReactorClient(
 
     inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform(
         ignoreAllWebClientResponseException: Boolean = false,
-        context: String = ""
+        context: String = "",
+        bearerToken: String = tokenFetcher.token()
     ) =
-        this.bearerToken(tokenFetcher.token())
+        this.bearerToken(bearerToken)
             .retrieve()
             .bodyToMono<T>()
             .notFoundAsEmpty()
