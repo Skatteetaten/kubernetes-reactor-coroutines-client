@@ -6,7 +6,6 @@ import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.ObjectMeta
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -34,16 +33,7 @@ fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(
     resource: Kind,
     labels: Map<String, String?> = resource.metadata?.labels ?: emptyMap()
 ): WebClient.RequestHeadersSpec<*> {
-
-    val metadata = if (resource.metadata == null) {
-        null
-    } else {
-        newObjectMeta {
-            namespace = resource.metadata?.namespace
-        }
-    }
-
-    return this.uri(createUrl(metadata, resource)) {
+    return this.uri(resource.createUrl()) {
         it.addQueryParamIfExist(labels).build(resource.uriVariables())
     }
 }
@@ -61,9 +51,15 @@ fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
         this.header(HttpHeaders.AUTHORIZATION, "Bearer $token")
     } ?: this
 
-fun createUrl(metadata: ObjectMeta?, resource: HasMetadata): String {
-    val apiVersion = resource.apiVersion
-    val kind = resource.kindUri()
+fun HasMetadata.createUrl(): String {
+    val metadata = if (metadata == null) {
+        null
+    } else {
+        newObjectMeta {
+            namespace = metadata?.namespace
+        }
+    }
+
     val contextRoot = if (apiVersion == "v1") {
         "/api"
     } else {
@@ -71,11 +67,11 @@ fun createUrl(metadata: ObjectMeta?, resource: HasMetadata): String {
     }
 
     return if (metadata == null) {
-        "$contextRoot/$apiVersion/$kind"
+        "$contextRoot/$apiVersion/${kindUri()}"
     } else {
         metadata.namespace?.let {
-            "$contextRoot/$apiVersion/namespaces/{namespace}/$kind/{name}"
-        } ?: "$contextRoot/$apiVersion/$kind/{name}"
+            "$contextRoot/$apiVersion/namespaces/{namespace}/${kindUri()}/{name}"
+        } ?: "$contextRoot/$apiVersion/${kindUri()}/{name}"
     }
 }
 
@@ -93,13 +89,13 @@ fun HasMetadata.uriVariables() = mapOf(
     "name" to this.metadata?.name
 )
 
-fun String.plurlize() = if (this.endsWith("s")) {
+fun String.pluralize() = if (this.endsWith("s")) {
     "${this}es"
 } else {
     "${this}s"
 }
 
-fun HasMetadata.kindUri() = this.kind.toLowerCase().plurlize()
+fun HasMetadata.kindUri() = this.kind.toLowerCase().pluralize()
 
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
@@ -109,11 +105,11 @@ fun HasMetadata.uri(): String {
     }
 
     return if (this.metadata == null) {
-        "$contextRoot/$apiVersion/${this.kindUri()}"
+        "$contextRoot/$apiVersion/${kindUri()}"
     } else {
         this.metadata.namespace?.let {
-            "$contextRoot/$apiVersion/namespaces/{namespace}/${this.kindUri()}/{name}"
-        } ?: "$contextRoot/$apiVersion/${this.kindUri()}/{name}"
+            "$contextRoot/$apiVersion/namespaces/{namespace}/${kindUri()}/{name}"
+        } ?: "$contextRoot/$apiVersion/${kindUri()}/{name}"
     }
 }
 
