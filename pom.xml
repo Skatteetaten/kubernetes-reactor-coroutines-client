@@ -69,7 +69,6 @@
     <kubernetesdsl.version>2.7.1</kubernetesdsl.version>
     <reactor.version>3.3.3.RELEASE</reactor.version>
     <reactorcore.version>3.3.9.RELEASE</reactorcore.version>
-    <reactorext.version>1.0.2.RELEASE</reactorext.version>
     <kotlinlogging.version>1.12.0</kotlinlogging.version>
 
     <junit.version>5.7.0</junit.version>
