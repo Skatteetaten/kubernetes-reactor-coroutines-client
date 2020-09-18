@@ -216,6 +216,7 @@ class KubernetesUserTokenClientIntegrationTest {
             assertThat(u).isNotNull()
         }
     }
+
     @Test
     fun `Get current user null on invalid token`() {
         runBlocking {
@@ -223,6 +224,7 @@ class KubernetesUserTokenClientIntegrationTest {
             assertThat(u).isNull()
         }
     }
+
     @Test
     fun `Self subject access review`() {
         runBlocking {

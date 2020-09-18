@@ -33,9 +33,6 @@ class KubernetesClientConfigTest {
     @Autowired
     private lateinit var client: KubernetesReactorClient
 
-    @MockkBean
-    private lateinit var tokenFetcher: TokenFetcher
-
     @Test
     fun `Spring initialization`() {
         assertThat(client).isNotNull()
