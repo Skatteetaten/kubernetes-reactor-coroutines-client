@@ -47,71 +47,75 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
      * @param metadata Fetch a given resource using the namespace and name on this metadata object
      * @return         A resource of the type Kind that is fetched reified from the variable you assign the result too
      **/
-    suspend inline fun <reified Kind : HasMetadata> getOrNull(metadata: ObjectMeta): Kind? =
-        client.get<Kind>(metadata).awaitFirstOrNull()
+    suspend inline fun <reified Kind : HasMetadata> getOrNull(metadata: ObjectMeta, token: String? = null): Kind? =
+        client.get<Kind>(metadata, token).awaitFirstOrNull()
 
-    suspend inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta): Kind =
-        getOrNull(metadata) ?: throwResourceNotFoundException(metadata)
+    suspend inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta, token: String? = null): Kind =
+        getOrNull(metadata, token) ?: throwResourceNotFoundException(metadata)
 
-    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind): Kind? =
-        client.get(resource).awaitFirstOrNull()
+    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind, token: String? = null): Kind? =
+        client.get(resource, token).awaitFirstOrNull()
 
-    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind): Kind =
-        getOrNull(resource) ?: throwResourceNotFoundException(resource.metadata)
+    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind, token: String? = null): Kind =
+        getOrNull(resource, token) ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind): List<Kind> {
-        return client.getMany(resource).awaitFirstOrNull() ?: emptyList()
+    suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind, token: String? = null): List<Kind> {
+        return client.getMany(resource, token).awaitFirstOrNull() ?: emptyList()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null): List<Kind> {
-        return client.getMany<Kind>(metadata).awaitFirstOrNull() ?: emptyList()
+    suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null, token: String? = null): List<Kind> {
+        return client.getMany<Kind>(metadata, token).awaitFirstOrNull() ?: emptyList()
     }
 
-    suspend fun currentUser(token:String) : User? = client.currentUser(token).awaitFirstOrNull()
+    suspend fun currentUser(token: String): User? = client.currentUser(token).awaitFirstOrNull()
 
-    suspend inline fun <reified Input : HasMetadata> post(resource: Input): Input =
-        client.post(resource).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
+    suspend inline fun <reified Input : HasMetadata> post(resource: Input, token: String? = null): Input =
+        client.post(resource = resource, token = token).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified Input : HasMetadata> put(resource: Input): Input =
-        client.put(resource).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
+    suspend inline fun <reified Input : HasMetadata> put(resource: Input, token: String? = null): Input =
+        client.put(resource = resource, token = token).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified Input : HasMetadata> deleteBackground(
         resource: Input,
-        options: DeleteOptions? = null
+        options: DeleteOptions? = null,
+        token: String? = null
     ): Status =
-        client.deleteBackground(resource, options).awaitFirstOrNull()
+        client.deleteBackground(resource = resource, deleteOptions = options, token = token).awaitFirstOrNull()
             ?: throw ResourceNotFoundException(notFoundMsg<Input>(resource.metadata))
 
     suspend inline fun <reified Input : HasMetadata> deleteForeground(
         resource: Input,
-        options: DeleteOptions? = null
+        options: DeleteOptions? = null,
+        token: String? = null
     ): Input =
-        client.deleteForeground(resource, options).awaitFirstOrNull()
+        client.deleteForeground(resource = resource, deleteOptions = options, token = token).awaitFirstOrNull()
             ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified Input : HasMetadata> deleteOrphan(
         resource: Input,
-        options: DeleteOptions? = null
+        options: DeleteOptions? = null,
+        token: String? = null
     ): Input =
-        client.deleteOrphan(resource, options).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
+        client.deleteOrphan(resource = resource, deleteOptions = options, token = token).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified T : Any> proxyGet(
         pod: Pod,
         port: Int,
         path: String,
-        headers: Map<String, String> = emptyMap()
+        headers: Map<String, String> = emptyMap(),
+        token: String? = null
     ): T {
-        return client.proxyGet<T>(pod, port, path, headers).awaitFirstOrNull()
+        return client.proxyGet<T>(pod = pod, port = port, path = path, headers = headers, token = token).awaitFirstOrNull()
             ?: throw ResourceNotFoundException(notFoundMsg<T>(pod.metadata))
     }
 
-    suspend inline fun scaleDeploymentConfig(namespace: String, name: String, count: Int): Scale {
-        return client.scaleDeploymentConfig(namespace, name, count).awaitFirstOrNull()
+    suspend inline fun scaleDeploymentConfig(namespace: String, name: String, count: Int, token: String? = null): Scale {
+        return client.scaleDeploymentConfig(namespace = namespace, name = name, count = count, token = token).awaitFirstOrNull()
             ?: throw ResourceNotFoundException(notFoundMsg<Scale>(namespace, name))
     }
 
-    suspend fun rolloutDeploymentConfig(namespace: String, name: String): DeploymentConfig {
-        return client.rolloutDeploymentConfig(namespace, name).awaitFirstOrNull()
+    suspend fun rolloutDeploymentConfig(namespace: String, name: String, token: String? = null): DeploymentConfig {
+        return client.rolloutDeploymentConfig(namespace = namespace, name = name, token = token).awaitFirstOrNull()
             ?: throw ResourceNotFoundException(notFoundMsg<Scale>(namespace, name))
     }
 

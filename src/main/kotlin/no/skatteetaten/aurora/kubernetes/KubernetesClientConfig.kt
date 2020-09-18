@@ -5,6 +5,7 @@ import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -187,8 +188,8 @@ class KubernetesClientConfig(
     fun kubernetesClientUserToken(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
-        tokenFetcher: TokenFetcher
-    ) = config.createUserAccountReactorClient(builder, trustStore, tokenFetcher).apply {
+        @Autowired(required = false) tokenFetcher: TokenFetcher?
+    ) = config.createUserAccountReactorClient(builder, trustStore, tokenFetcher ?: NoopTokenFetcher()).apply {
         webClientBuilder.defaultHeaders(applicationName)
     }.build()
 

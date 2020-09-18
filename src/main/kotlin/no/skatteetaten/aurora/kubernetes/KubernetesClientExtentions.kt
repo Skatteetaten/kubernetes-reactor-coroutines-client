@@ -13,8 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.util.UriBuilder
 import reactor.core.publisher.Mono
-import reactor.retry.Retry
-import reactor.retry.RetryContext
+import reactor.util.retry.Retry
 
 class ResourceNotFoundException(m: String) : RuntimeException(m)
 
@@ -77,11 +76,18 @@ fun HasMetadata.createUrl(): String {
 
 @FunctionalInterface
 interface TokenFetcher {
-    fun token(): String
+    fun token(): String?
 }
 
 class StringTokenFetcher(val token: String) : TokenFetcher {
     override fun token() = token
+}
+
+class NoopTokenFetcher : TokenFetcher {
+    override fun token(): String? {
+        logger.debug("NoopTokenFetcher configured and no token sent in")
+        return null
+    }
 }
 
 fun HasMetadata.uriVariables() = mapOf(
@@ -127,6 +133,7 @@ fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
         else -> Mono.error(it)
     }
 }
+
 fun <T> Mono<T>.unauthorizedAsEmpty() = this.onErrorResume {
     when (it) {
         is WebClientResponseException.Unauthorized -> {
@@ -146,25 +153,24 @@ fun <T> Mono<T>.retryWithLog(
         return this
     }
 
-    return this.retryWhen(Retry.onlyIf<Mono<T>> {
-        logger.trace(it.exception()) {
-            val e = it.exception()
-            "retryWhen called with exception ${e?.javaClass?.simpleName}, message: ${e?.message}"
-        }
+    return this.retryWhen(Retry
+        .backoff(retryConfiguration.times, retryConfiguration.min)
+        .maxBackoff(retryConfiguration.max)
+        .filter {
+            logger.trace(it) {
+                "retryWhen called with exception ${it?.javaClass?.simpleName}, message: ${it?.message}"
+            }
 
-        if (ignoreAllWebClientResponseException) {
-            it.exception() !is WebClientResponseException
-        } else {
-            it.isServerError() || it.exception() !is WebClientResponseException
-        }
-    }
-        .exponentialBackoff(retryConfiguration.min, retryConfiguration.max)
-        .retryMax(retryConfiguration.times)
-        .doOnRetry {
+            if (ignoreAllWebClientResponseException) {
+                it !is WebClientResponseException
+            } else {
+                it.isServerError() || it !is WebClientResponseException
+            }
+        }.doAfterRetry {
+            val e = it.failure()
             logger.debug {
-                val e = it.exception()
                 val msg =
-                    "Retrying failed request times=${it.iteration()}, context=${context} errorType=${e.javaClass.simpleName} errorMessage=${e.message}"
+                    "Retrying failed request times=${it.totalRetries()}, context=${context} errorType=${e.javaClass.simpleName} errorMessage=${e.message}"
                 if (e is WebClientResponseException) {
                     "$msg, method=${e.request?.method} uri=${e.request?.uri}"
                 } else {
@@ -175,8 +181,8 @@ fun <T> Mono<T>.retryWithLog(
     )
 }
 
-fun <T> RetryContext<Mono<T>>.isServerError() =
-    this.exception() is WebClientResponseException && (this.exception() as WebClientResponseException).statusCode.is5xxServerError
+private fun Throwable.isServerError() =
+    this is WebClientResponseException && this.statusCode.is5xxServerError
 
 fun UriBuilder.addQueryParamIfExist(label: Map<String, String?>?): UriBuilder {
     if (label.isNullOrEmpty()) return this
