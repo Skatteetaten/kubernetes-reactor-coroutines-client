@@ -23,8 +23,7 @@ fun kubernetesToken(environment: String = "utv-master"): String {
     val content = kubernetesConfig.readText()
     val values = ObjectMapper(YAMLFactory()).readTree(content)
     return values.at("/users").iterator().asSequence()
-        .firstOrNull { it.at("/name").textValue().contains("$environment-paas-skead-no") }
-        ?.at("/user/token")?.textValue()
+        .firstOrNull()?.at("/user/token")?.textValue()
         ?: throw IllegalArgumentException("No Kubernetes token found for environment $environment")
 }
 
