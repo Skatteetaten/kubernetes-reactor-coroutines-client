@@ -220,7 +220,8 @@ class KubernetesUserTokenClientIntegrationTest {
     }
 
     @Test
-    fun `Get user review`() {
+    @Disabled("Requires cluster admin token")
+    fun `Get token review`() {
         runBlocking {
             val tokenReview = newTokenReview {
                 spec {
@@ -228,7 +229,7 @@ class KubernetesUserTokenClientIntegrationTest {
                 }
             }
             val result = kubernetesClient.post(tokenReview, kubernetesToken())
-            println("")
+            assertThat(result).isNotNull()
         }
     }
 
