@@ -22,10 +22,11 @@ fun kubernetesToken(environment: String = "utv-master"): String {
 
     val content = kubernetesConfig.readText()
     val values = ObjectMapper(YAMLFactory()).readTree(content)
-    return values.at("/users").iterator().asSequence()
-        .firstOrNull { it.at("/name").textValue().contains("$environment-paas-skead-no") }
-        ?.at("/user/token")?.textValue()
-        ?: throw IllegalArgumentException("No Kubernetes token found for environment $environment")
+    return if (values.at("/current-context").textValue().contains(environment)) {
+        values.at("/users").iterator().asSequence().first().at("/user/token").textValue()
+    } else {
+        throw IllegalArgumentException("No Kubernetes token found for environment $environment")
+    }
 }
 
 fun testWebClient() = WebClient.builder().baseUrl(KUBERNETES_URL)

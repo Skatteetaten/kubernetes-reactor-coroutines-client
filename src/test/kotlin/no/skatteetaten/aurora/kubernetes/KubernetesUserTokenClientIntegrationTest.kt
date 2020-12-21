@@ -6,6 +6,8 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.fasterxml.jackson.databind.JsonNode
+import com.fkorotkov.kubernetes.authentication.newTokenReview
+import com.fkorotkov.kubernetes.authentication.spec
 import com.fkorotkov.kubernetes.authorization.newSelfSubjectAccessReview
 import com.fkorotkov.kubernetes.authorization.resourceAttributes
 import com.fkorotkov.kubernetes.authorization.spec
@@ -214,6 +216,20 @@ class KubernetesUserTokenClientIntegrationTest {
         runBlocking {
             val u = kubernetesClient.currentUser(kubernetesToken())
             assertThat(u).isNotNull()
+        }
+    }
+
+    @Test
+    @Disabled("Requires cluster admin token")
+    fun `Get token review`() {
+        runBlocking {
+            val tokenReview = newTokenReview {
+                spec {
+                    token = kubernetesToken()
+                }
+            }
+            val result = kubernetesClient.post(tokenReview, kubernetesToken())
+            assertThat(result).isNotNull()
         }
     }
 

@@ -5,10 +5,10 @@ import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.openshift.api.model.User
 import io.fabric8.kubernetes.api.model.Status
 import io.fabric8.kubernetes.api.model.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
+import io.fabric8.openshift.api.model.User
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.web.reactive.function.client.WebClient
 
