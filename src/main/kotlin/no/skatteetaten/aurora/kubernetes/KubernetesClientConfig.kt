@@ -1,5 +1,7 @@
 package no.skatteetaten.aurora.kubernetes
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.netty.channel.ChannelOption
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
@@ -82,10 +84,9 @@ data class KubnernetesClientConfiguration(
     ): KubernetesReactorClient.Builder {
         val tcpClient = tcpClient(trustStore)
         val webClient = kubernetesWebClient(builder, tcpClient)
-        val token = File(tokenLocation).readText().trim()
         return KubernetesReactorClient.Builder(
             webClient,
-            StringTokenFetcher(token),
+            StringTokenFetcher(kubernetesToken(tokenLocation)),
             retry
         )
     }
@@ -200,7 +201,7 @@ class KubernetesClientConfig(
             HttpClient.create()
                 .baseUrl(config.url)
                 .headers { headers ->
-                    File(config.tokenLocation).takeIf { it.isFile }?.let {
+                    File(kubernetesToken(config.tokenLocation)).takeIf { it.isFile }?.let {
                         headers.add(HttpHeaders.AUTHORIZATION, "Bearer ${it.readText()}")
                     }
 
@@ -234,4 +235,18 @@ fun WebClient.Builder.defaultHeaders(applicationName: String) = this
     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
     .defaultHeader("User-Agent", applicationName)
 
+fun kubernetesToken(tokenLocation: String = ""): String {
+    val tokenFile = File(tokenLocation)
+    return if (tokenFile.isFile) {
+        logger.debug("Reading token from: $tokenLocation")
+        tokenFile.readText().trim()
+    } else {
+        val path = "${System.getProperty("user.home")}/.kube/config"
+        logger.info("Token location ($tokenLocation) not found, trying to read token from $path")
+        File(path).readText().let {
+            val values = ObjectMapper(YAMLFactory()).readTree(it)
+            values.at("/users").iterator().asSequence().first().at("/user/token").textValue()
+        }
+    }
+}
 

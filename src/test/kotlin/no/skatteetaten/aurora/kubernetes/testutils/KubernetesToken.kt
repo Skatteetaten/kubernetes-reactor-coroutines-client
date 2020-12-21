@@ -1,8 +1,6 @@
 package no.skatteetaten.aurora.kubernetes.testutils
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import java.io.File
+import no.skatteetaten.aurora.kubernetes.kubernetesToken
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition
 import org.junit.jupiter.api.extension.ExtendWith
@@ -14,20 +12,6 @@ const val KUBERNETES_URL = "https://utv-master.paas.skead.no:8443"
 const val NAMESPACE = "aurora"
 const val NAMESPACE_DEV = "aurora-dev"
 const val NAME = "boober"
-
-fun kubernetesToken(environment: String = "utv-master"): String {
-    val kubernetesConfig = File("${System.getProperty("user.home")}/.kube/config")
-    if (!kubernetesConfig.exists())
-        throw IllegalArgumentException("No kubernetes config file found in ${kubernetesConfig.absolutePath}")
-
-    val content = kubernetesConfig.readText()
-    val values = ObjectMapper(YAMLFactory()).readTree(content)
-    return if (values.at("/current-context").textValue().contains(environment)) {
-        values.at("/users").iterator().asSequence().first().at("/user/token").textValue()
-    } else {
-        throw IllegalArgumentException("No Kubernetes token found for environment $environment")
-    }
-}
 
 fun testWebClient() = WebClient.builder().baseUrl(KUBERNETES_URL)
     .exchangeStrategies(

@@ -36,7 +36,6 @@ import no.skatteetaten.aurora.kubernetes.testutils.KUBERNETES_URL
 import no.skatteetaten.aurora.kubernetes.testutils.NAME
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
-import no.skatteetaten.aurora.kubernetes.testutils.kubernetesToken
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
