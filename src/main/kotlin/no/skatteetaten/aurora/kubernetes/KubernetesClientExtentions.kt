@@ -6,6 +6,8 @@ import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.authentication.TokenReview
+import io.fabric8.kubernetes.api.model.authentication.TokenReviewStatus
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -204,3 +206,6 @@ fun DeleteOptions?.propagationPolicy(propagationPolicy: String): DeleteOptions =
         this.propagationPolicy = propagationPolicy
         this
     } ?: newDeleteOptions { this.propagationPolicy = propagationPolicy }
+
+fun TokenReview.hasError() = this.status?.error?.let { true } ?: false
+fun TokenReview.errorMessage(): String? = this.status?.error
