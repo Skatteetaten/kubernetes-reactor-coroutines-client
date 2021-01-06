@@ -2,6 +2,7 @@ package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
@@ -227,8 +228,10 @@ class KubernetesUserTokenClientIntegrationTest {
                     token = kubernetesToken()
                 }
             }
-            val result = kubernetesClient.post(tokenReview, kubernetesToken())
+            val result = kubernetesClient.post(tokenReview, "service account token")
             assertThat(result).isNotNull()
+            assertThat(result.hasError()).isFalse()
+            assertThat(result.errorMessage()).isNull()
         }
     }
 
