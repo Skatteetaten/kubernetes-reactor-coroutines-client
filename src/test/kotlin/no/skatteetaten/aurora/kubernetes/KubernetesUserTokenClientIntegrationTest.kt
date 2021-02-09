@@ -219,8 +219,8 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-    @Test
     @Disabled("Requires cluster admin token")
+    @Test
     fun `Get token review`() {
         runBlocking {
             val tokenReview = newTokenReview {
@@ -284,7 +284,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Roll out deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE, "")
+            val dc = kubernetesClient.rolloutDeploymentConfig(NAMESPACE_DEV, "")
             assertThat(dc).isNotNull()
         }
     }
@@ -293,7 +293,7 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Scale deployment config`() {
         runBlocking {
-            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE, "", 2)
+            val s = kubernetesClient.scaleDeploymentConfig(NAMESPACE_DEV, "", 2)
             assertThat(s).isNotNull()
         }
     }

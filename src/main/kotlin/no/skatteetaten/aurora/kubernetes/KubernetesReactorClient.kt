@@ -1,9 +1,9 @@
 package no.skatteetaten.aurora.kubernetes
 
+import com.fkorotkov.kubernetes.autoscaling.v1.metadata
+import com.fkorotkov.kubernetes.autoscaling.v1.newScale
+import com.fkorotkov.kubernetes.autoscaling.v1.spec
 import com.fkorotkov.kubernetes.newObjectMeta
-import com.fkorotkov.kubernetes.v1.metadata
-import com.fkorotkov.kubernetes.v1.newScale
-import com.fkorotkov.kubernetes.v1.spec
 import com.fkorotkov.openshift.metadata
 import com.fkorotkov.openshift.newDeploymentConfig
 import io.fabric8.kubernetes.api.model.DeleteOptions
@@ -13,7 +13,7 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Status
-import io.fabric8.kubernetes.api.model.v1.Scale
+import io.fabric8.kubernetes.api.model.autoscaling.v1.Scale
 import io.fabric8.openshift.api.model.DeploymentConfig
 import mu.KotlinLogging
 import org.springframework.http.HttpMethod
