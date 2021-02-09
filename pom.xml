@@ -72,6 +72,7 @@
     <kotlinlogging.version>2.0.4</kotlinlogging.version>
 
     <junit.version>5.7.1</junit.version>
+    <junitpioneer.version>1.3.0</junitpioneer.version>
     <mockk.version>1.10.5</mockk.version>
     <assertk.version>0.23.1</assertk.version>
     <mockmvcext.version>1.1.6</mockmvcext.version>
@@ -147,6 +148,18 @@
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <version>1.7.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit-pioneer</groupId>
+      <artifactId>junit-pioneer</artifactId>
+      <version>${junitpioneer.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

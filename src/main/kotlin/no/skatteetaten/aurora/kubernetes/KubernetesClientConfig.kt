@@ -28,6 +28,7 @@ import reactor.netty.tcp.SslProvider
 import reactor.netty.tcp.TcpClient
 import java.io.File
 import java.io.FileInputStream
+import java.lang.IllegalArgumentException
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -242,10 +243,19 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         tokenFile.readText().trim()
     } else {
         val path = "${System.getProperty("user.home")}/.kube/config"
-        logger.info("Token location ($tokenLocation) not found, trying to read token from $path")
+        logger.info("Token location ($tokenLocation) not found, reading token from $path")
         File(path).readText().let {
             val values = ObjectMapper(YAMLFactory()).readTree(it)
-            values.at("/users").iterator().asSequence().first().at("/user/token").textValue()
+            val users = values.at("/users").iterator().asSequence().toList()
+            if (users.size == 1) {
+                users.first().at("/user/token").textValue()
+            } else {
+                val currentContext = values.at("/current-context").textValue()
+                val key = currentContext.substring(currentContext.indexOf("/") + 1, currentContext.lastIndexOf("/"))
+                users.find { user ->
+                    user.at("/name").textValue().endsWith(key)
+                }?.at("/user/token")?.textValue() ?: throw IllegalArgumentException("Could not find token in $path")
+            }
         }
     }
 }
