@@ -5,6 +5,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.KUBERNETES_URL
 import org.junit.jupiter.api.Test
 import org.junitpioneer.jupiter.SetSystemProperty
@@ -85,6 +86,7 @@ class UserTokenConfigTest {
     }
 }
 
+@DisableIfJenkins
 @SetSystemProperty(key = "user.home", value = "src/test/resources/test-config/single")
 @SpringBootTest(classes = [TestKubeConfig::class, KubernetesClientConfig::class])
 class SingleUserConfigTest {
@@ -100,6 +102,7 @@ class SingleUserConfigTest {
     }
 }
 
+@DisableIfJenkins
 @SetSystemProperty(key = "user.home", value = "src/test/resources/test-config/multiple")
 @SpringBootTest(classes = [TestKubeConfig::class, KubernetesClientConfig::class])
 class MultipleUsersConfigTest {
