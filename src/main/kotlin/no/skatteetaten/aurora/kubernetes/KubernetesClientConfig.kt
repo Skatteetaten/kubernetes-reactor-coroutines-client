@@ -242,12 +242,14 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         logger.debug("Reading token from: $tokenLocation")
         tokenFile.readText().trim()
     } else {
-        val path = "${System.getProperty("user.home")}/.kube/config"
+        val userHome = System.getProperty("user.home")
+        val path = "$userHome/.kube/config"
         logger.info("Token location ($tokenLocation) not found, reading token from $path")
         File(path).readText().let {
             val values = ObjectMapper(YAMLFactory()).readTree(it)
             val users = values.at("/users").iterator().asSequence().toList()
-            if (users.size == 1) {
+            val name = users.first().at("/name").textValue()
+            if (name == userHome.substringAfterLast("/")) {
                 users.first().at("/user/token").textValue()
             } else {
                 val currentContext = values.at("/current-context").textValue()
