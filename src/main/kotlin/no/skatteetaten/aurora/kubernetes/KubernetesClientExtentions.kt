@@ -217,4 +217,4 @@ fun DeleteOptions?.propagationPolicy(propagationPolicy: String): DeleteOptions =
 
 fun TokenReview.hasError() = this.status?.error?.let { true } ?: false
 fun TokenReview.errorMessage(): String? = this.status?.error
-fun TokenReview.isAuthenticated() = this.status.authenticated ?: false
+fun TokenReview.isAuthenticated() = this.status?.authenticated ?: false
