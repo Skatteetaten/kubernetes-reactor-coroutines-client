@@ -1,7 +1,7 @@
 package no.skatteetaten.aurora.kubernetes
 
 import assertk.assertThat
-import assertk.assertions.isNotNull
+import assertk.assertions.isEqualTo
 import org.junit.jupiter.api.Test
 import org.junitpioneer.jupiter.SetEnvironmentVariable
 
@@ -11,6 +11,6 @@ class PsatTokenFetcherTest {
     @Test
     fun `Get token with audience`() {
         val token = PsatTokenFetcher().token("test-token.txt")
-        assertThat(token).isNotNull()
+        assertThat(token).isEqualTo("abc123")
     }
 }
