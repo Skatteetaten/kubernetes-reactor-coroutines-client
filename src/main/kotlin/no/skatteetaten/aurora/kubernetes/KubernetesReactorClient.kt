@@ -39,7 +39,7 @@ class KubernetesReactorClient(
     ) : this(
         WebClient.create(baseUrl),
         object : TokenFetcher {
-            override fun token() = token
+            override fun token(audience: String?) = token
         },
         retryConfiguration
     )
@@ -104,15 +104,31 @@ class KubernetesReactorClient(
         ).perform(bearerToken = token)
     }
 
-    inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta, token: String? = null): Mono<Kind> {
+    inline fun <reified Kind : HasMetadata> get(
+        metadata: ObjectMeta,
+        token: String? = null,
+        audience: String? = null
+    ): Mono<Kind> {
         return webClient.get().kubernetesUri(TypedHasMetadata(Kind::class, metadata))
-            .perform(context = "get ${Kind::class.java}/${metadata.namespace}/${metadata.name}", bearerToken = token)
+            .perform(
+                context = "get ${Kind::class.java}/${metadata.namespace}/${metadata.name}",
+                bearerToken = token,
+                audience = audience
+            )
     }
 
-    inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null, token: String? = null): Mono<List<Kind>> {
+    inline fun <reified Kind : HasMetadata> getMany(
+        metadata: ObjectMeta? = null,
+        token: String? = null,
+        audience: String? = null
+    ): Mono<List<Kind>> {
         return webClient.get()
             .kubernetesListUri<HasMetadata>(TypedHasMetadata(Kind::class, metadata))
-            .perform<KubernetesResourceList<Kind>>(context = "get many ${Kind::class.java}/${metadata?.namespace}", bearerToken = token)
+            .perform<KubernetesResourceList<Kind>>(
+                context = "get many ${Kind::class.java}/${metadata?.namespace}",
+                bearerToken = token,
+                audience = audience
+            )
             .map { it.items }
     }
 
@@ -134,12 +150,16 @@ class KubernetesReactorClient(
             headers.forEach {
                 h.add(it.key, it.value)
             }
-        }.perform<T>(true, context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path", bearerToken = token)
+        }.perform<T>(
+            true,
+            context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path",
+            bearerToken = token
+        )
     }
 
 
     fun currentUser(token: String): Mono<User> {
-        val resource= newCurrentUser()
+        val resource = newCurrentUser()
         return webClient.get().kubernetesUri(newCurrentUser())
             .perform<User>(context = "get current user", bearerToken = token)
             .unauthorizedAsEmpty()
@@ -150,9 +170,13 @@ class KubernetesReactorClient(
             }
     }
 
-    inline fun <reified Kind : HasMetadata> get(resource: Kind, token: String? = null): Mono<Kind> {
+    inline fun <reified Kind : HasMetadata> get(resource: Kind, token: String? = null, audience: String? = null): Mono<Kind> {
         return webClient.get().kubernetesUri(resource)
-            .perform<Kind>(context = "get ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform<Kind>(
+                context = "get ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token,
+                audience = audience
+            )
             .doOnError {
                 logger.debug(
                     "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
@@ -160,9 +184,15 @@ class KubernetesReactorClient(
             }
     }
 
-    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(resource: Input, token: String? = null): Mono<Output> {
+    inline fun <reified Input : HasMetadata, reified Output : HasMetadata> getWithQueryResource(
+        resource: Input,
+        token: String? = null
+    ): Mono<Output> {
         return webClient.get().kubernetesUri(resource)
-            .perform<Output>(context = "get ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform<Output>(
+                context = "get ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token
+            )
             .doOnError {
                 logger.debug(
                     "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
@@ -170,10 +200,14 @@ class KubernetesReactorClient(
             }
     }
 
-    inline fun <reified Kind : HasMetadata> getMany(resource: Kind, token: String? = null): Mono<List<Kind>> {
+    inline fun <reified Kind : HasMetadata> getMany(resource: Kind, token: String? = null, audience: String? = null): Mono<List<Kind>> {
         return webClient.get()
             .kubernetesListUri(resource)
-            .perform<KubernetesResourceList<Kind>>(context = "get many ${resource.kind}/${resource.metadata?.namespace}", bearerToken = token)
+            .perform<KubernetesResourceList<Kind>>(
+                context = "get many ${resource.kind}/${resource.metadata?.namespace}",
+                bearerToken = token,
+                audience = audience
+            )
             .doOnError {
                 logger.debug(
                     "Error occurred for getting type=${it.javaClass.simpleName} kind=${resource.kind} namespace=${resource.metadata?.namespace} name=${resource.metadata?.name} message=${it.message}"
@@ -182,16 +216,34 @@ class KubernetesReactorClient(
             .map { it.items }
     }
 
-    inline fun <reified Kind : HasMetadata> post(resource: Kind, body: Any = resource, token: String? = null): Mono<Kind> {
+    inline fun <reified Kind : HasMetadata> post(
+        resource: Kind,
+        body: Any = resource,
+        token: String? = null,
+        audience: String? = null
+    ): Mono<Kind> {
         return webClient.post()
             .kubernetesBodyUri(resource, body)
-            .perform<Kind>(context = "post ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform<Kind>(
+                context = "post ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token,
+                audience = audience
+            )
     }
 
-    inline fun <reified Kind : HasMetadata> put(resource: Kind, body: Any = resource, token: String? = null): Mono<Kind> {
+    inline fun <reified Kind : HasMetadata> put(
+        resource: Kind,
+        body: Any = resource,
+        token: String? = null,
+        audience: String? = null
+    ): Mono<Kind> {
         return webClient.put()
             .kubernetesBodyUri(resource, body)
-            .perform(context = "put ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform(
+                context = "put ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token,
+                audience = audience
+            )
     }
 
     //background=Status
@@ -203,7 +255,10 @@ class KubernetesReactorClient(
     ): Mono<Kind> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Foreground"))
-            .perform(context = "delete foreground ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform(
+                context = "delete foreground ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token
+            )
     }
 
     inline fun <reified Kind : HasMetadata> deleteOrphan(
@@ -213,7 +268,10 @@ class KubernetesReactorClient(
     ): Mono<Kind> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Orphan"))
-            .perform(context = "delete orphan ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform(
+                context = "delete orphan ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token
+            )
     }
 
     inline fun <reified Kind : HasMetadata> deleteBackground(
@@ -223,15 +281,19 @@ class KubernetesReactorClient(
     ): Mono<Status> {
         return webClient.method(HttpMethod.DELETE)
             .kubernetesBodyUri(resource, deleteOptions.propagationPolicy("Background"))
-            .perform(context = "delete background ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}", bearerToken = token)
+            .perform(
+                context = "delete background ${resource.kind}/${resource.metadata?.namespace}/${resource.metadata?.name}",
+                bearerToken = token
+            )
     }
 
     inline fun <reified T : Any> WebClient.RequestHeadersSpec<*>.perform(
         ignoreAllWebClientResponseException: Boolean = false,
         context: String = "",
-        bearerToken: String?
+        bearerToken: String? = null,
+        audience: String? = null
     ) =
-        this.bearerToken(bearerToken ?: tokenFetcher.token())
+        this.bearerToken(bearerToken ?: tokenFetcher.token(audience))
             .retrieve()
             .bodyToMono<T>()
             .notFoundAsEmpty()

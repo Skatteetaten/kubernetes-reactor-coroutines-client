@@ -39,7 +39,7 @@ import javax.net.ssl.TrustManagerFactory
 private val logger = KotlinLogging.logger {}
 
 enum class ClientTypes {
-    USER_TOKEN, SERVICE_ACCOUNT
+    USER_TOKEN, SERVICE_ACCOUNT, PSAT
 }
 
 @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
@@ -88,6 +88,19 @@ data class KubnernetesClientConfiguration(
         return KubernetesReactorClient.Builder(
             webClient,
             StringTokenFetcher(kubernetesToken(tokenLocation)),
+            retry
+        )
+    }
+
+    fun createPsatReactorClient(
+        builder: WebClient.Builder,
+        trustStore: KeyStore?
+    ): KubernetesReactorClient.Builder {
+        val tcpClient = tcpClient(trustStore)
+        val webClient = kubernetesWebClient(builder, tcpClient)
+        return KubernetesReactorClient.Builder(
+            webClient,
+            PsatTokenFetcher(),
             retry
         )
     }
@@ -180,6 +193,16 @@ class KubernetesClientConfig(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
     ) = config.createServiceAccountReactorClient(builder, trustStore).apply {
+        webClientBuilder.defaultHeaders(applicationName)
+    }.build()
+
+    @Lazy(true)
+    @Bean
+    @TargetClient(ClientTypes.PSAT)
+    fun kubernetesClientPsat(
+        builder: WebClient.Builder,
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
+    ) = config.createPsatReactorClient(builder, trustStore).apply {
         webClientBuilder.defaultHeaders(applicationName)
     }.build()
 

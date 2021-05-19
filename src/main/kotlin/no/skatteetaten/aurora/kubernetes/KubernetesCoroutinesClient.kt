@@ -35,7 +35,7 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
         KubernetesReactorClient(
             WebClient.create(baseUrl),
             object : TokenFetcher {
-                override fun token() = token
+                override fun token(audience: String?) = token
             },
             retryConfiguration
         )
@@ -47,33 +47,33 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient) {
      * @param metadata Fetch a given resource using the namespace and name on this metadata object
      * @return         A resource of the type Kind that is fetched reified from the variable you assign the result too
      **/
-    suspend inline fun <reified Kind : HasMetadata> getOrNull(metadata: ObjectMeta, token: String? = null): Kind? =
-        client.get<Kind>(metadata, token).awaitFirstOrNull()
+    suspend inline fun <reified Kind : HasMetadata> getOrNull(metadata: ObjectMeta, token: String? = null, audience: String? = null): Kind? =
+        client.get<Kind>(metadata, token, audience).awaitFirstOrNull()
 
-    suspend inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta, token: String? = null): Kind =
-        getOrNull(metadata, token) ?: throwResourceNotFoundException(metadata)
+    suspend inline fun <reified Kind : HasMetadata> get(metadata: ObjectMeta, token: String? = null, audience: String? = null): Kind =
+        getOrNull(metadata, token, audience) ?: throwResourceNotFoundException(metadata)
 
-    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind, token: String? = null): Kind? =
-        client.get(resource, token).awaitFirstOrNull()
+    suspend inline fun <reified Kind : HasMetadata> getOrNull(resource: Kind, token: String? = null, audience: String? = null): Kind? =
+        client.get(resource, token, audience).awaitFirstOrNull()
 
-    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind, token: String? = null): Kind =
-        getOrNull(resource, token) ?: throwResourceNotFoundException(resource.metadata)
+    suspend inline fun <reified Kind : HasMetadata> get(resource: Kind, token: String? = null, audience: String? = null): Kind =
+        getOrNull(resource, token, audience) ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind, token: String? = null): List<Kind> {
-        return client.getMany(resource, token).awaitFirstOrNull() ?: emptyList()
+    suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind, token: String? = null, audience: String? = null): List<Kind> {
+        return client.getMany(resource, token, audience).awaitFirstOrNull() ?: emptyList()
     }
 
-    suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null, token: String? = null): List<Kind> {
-        return client.getMany<Kind>(metadata, token).awaitFirstOrNull() ?: emptyList()
+    suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null, token: String? = null, audience: String? = null): List<Kind> {
+        return client.getMany<Kind>(metadata, token, audience).awaitFirstOrNull() ?: emptyList()
     }
 
     suspend fun currentUser(token: String): User? = client.currentUser(token).awaitFirstOrNull()
 
-    suspend inline fun <reified Input : HasMetadata> post(resource: Input, token: String? = null): Input =
-        client.post(resource = resource, token = token).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
+    suspend inline fun <reified Input : HasMetadata> post(resource: Input, token: String? = null, audience: String? = null): Input =
+        client.post(resource = resource, token = token, audience = audience).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
-    suspend inline fun <reified Input : HasMetadata> put(resource: Input, token: String? = null): Input =
-        client.put(resource = resource, token = token).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
+    suspend inline fun <reified Input : HasMetadata> put(resource: Input, token: String? = null, audience: String? = null): Input =
+        client.put(resource = resource, token = token, audience = audience).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
     suspend inline fun <reified Input : HasMetadata> deleteBackground(
         resource: Input,
