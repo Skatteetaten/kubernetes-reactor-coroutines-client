@@ -84,7 +84,6 @@ interface TokenFetcher {
 
 class PsatTokenFetcher : TokenFetcher {
     override fun token(audience: String?): String? {
-        val envs = System.getenv()
         val tokenLocation = System.getenv("VOLUME_PSAT_TOKEN_MOUNT") ?: "/u01/secrets/app/psat-token"
         return File("$tokenLocation/$audience").readText().trim()
     }
