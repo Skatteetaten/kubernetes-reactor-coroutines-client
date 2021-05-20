@@ -1,5 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  no.skatteetaten.aurora.kubernetes.KubernetesClientConfig,\
-  no.skatteetaten.aurora.kubernetes.KubnernetesClientConfiguration,\
+  no.skatteetaten.aurora.kubernetes.config.KubernetesClientConfig,\
+  no.skatteetaten.aurora.kubernetes.KubernetesConfiguration,\
   no.skatteetaten.aurora.kubernetes.RetryConfiguration,\
   no.skatteetaten.aurora.kubernetes.HttpClientTimeoutConfiguration

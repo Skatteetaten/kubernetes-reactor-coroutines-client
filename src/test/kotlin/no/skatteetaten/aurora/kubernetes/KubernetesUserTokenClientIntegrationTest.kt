@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val config = KubnernetesClientConfiguration(
+    private val config = KubernetesConfiguration(
         retry = RetryConfiguration(0),
         timeout = HttpClientTimeoutConfiguration(),
         url = KUBERNETES_URL

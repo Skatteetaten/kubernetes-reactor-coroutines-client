@@ -30,7 +30,7 @@ class KubernetesClientNetworkTest {
     private val server = MockWebServer()
     private val url = server.url("/")
 
-    private val config = KubnernetesClientConfiguration(
+    private val config = KubernetesConfiguration(
         retry = RetryConfiguration(),
         timeout = HttpClientTimeoutConfiguration(),
         url = url.toString()

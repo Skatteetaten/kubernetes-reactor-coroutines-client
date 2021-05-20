@@ -7,7 +7,6 @@ import com.fkorotkov.openshift.newUser
 import io.fabric8.kubernetes.api.model.DeleteOptions
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.authentication.TokenReview
-import io.fabric8.kubernetes.api.model.authentication.TokenReviewStatus
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.BodyInserters
@@ -16,7 +15,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.util.UriBuilder
 import reactor.core.publisher.Mono
 import reactor.util.retry.Retry
-import java.io.File
 
 class ResourceNotFoundException(m: String) : RuntimeException(m)
 
@@ -26,27 +24,24 @@ fun <Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
     resource: Kind,
     body: Any,
     uriSuffix: String = ""
-): WebClient.RequestHeadersSpec<*> {
-    return this.uri(resource.uri() + uriSuffix, resource.uriVariables())
+): WebClient.RequestHeadersSpec<*> =
+    this.uri(resource.uri() + uriSuffix, resource.uriVariables())
         .body(BodyInserters.fromValue(body))
-}
 
 fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(
     resource: Kind,
     labels: Map<String, String?> = resource.metadata?.labels ?: emptyMap()
-): WebClient.RequestHeadersSpec<*> {
-    return this.uri(resource.createUrl()) {
+): WebClient.RequestHeadersSpec<*> =
+    this.uri(resource.createUrl()) {
         it.addQueryParamIfExist(labels).build(resource.uriVariables())
     }
-}
 
 fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesUri(
     resource: Kind,
     uriSuffix: String = "",
     additionalUriVariables: Map<String, String> = emptyMap()
-): WebClient.RequestHeadersSpec<*> {
-    return this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
-}
+): WebClient.RequestHeadersSpec<*> =
+    this.uri("${resource.uri()}$uriSuffix", resource.uriVariables() + additionalUriVariables)
 
 fun WebClient.RequestHeadersSpec<*>.bearerToken(token: String?) =
     token?.let {
@@ -74,29 +69,6 @@ fun HasMetadata.createUrl(): String {
         metadata.namespace?.let {
             "$contextRoot/$apiVersion/namespaces/{namespace}/${kindUri()}/{name}"
         } ?: "$contextRoot/$apiVersion/${kindUri()}/{name}"
-    }
-}
-
-@FunctionalInterface
-interface TokenFetcher {
-    fun token(audience: String? = null): String?
-}
-
-class PsatTokenFetcher : TokenFetcher {
-    override fun token(audience: String?): String? {
-        val tokenLocation = System.getenv("VOLUME_PSAT_TOKEN_MOUNT") ?: "/u01/secrets/app/psat-token"
-        return File("$tokenLocation/$audience").readText().trim()
-    }
-}
-
-class StringTokenFetcher(val token: String) : TokenFetcher {
-    override fun token(audience: String?) = token
-}
-
-class NoopTokenFetcher : TokenFetcher {
-    override fun token(audience: String?): String? {
-        logger.debug("NoopTokenFetcher configured and no token sent in")
-        return null
     }
 }
 
