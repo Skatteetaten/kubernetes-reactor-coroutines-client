@@ -1,6 +1,6 @@
 package no.skatteetaten.aurora.kubernetes.testutils
 
-import no.skatteetaten.aurora.kubernetes.kubernetesToken
+import no.skatteetaten.aurora.kubernetes.config.kubernetesToken
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition
 import org.junit.jupiter.api.extension.ExtendWith

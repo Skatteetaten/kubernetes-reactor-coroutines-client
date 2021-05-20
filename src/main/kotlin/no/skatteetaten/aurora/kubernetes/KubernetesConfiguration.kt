@@ -5,6 +5,8 @@ import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
+import no.skatteetaten.aurora.kubernetes.config.defaultHeaders
+import no.skatteetaten.aurora.kubernetes.config.kubernetesToken
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.stereotype.Component

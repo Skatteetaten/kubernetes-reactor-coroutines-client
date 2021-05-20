@@ -4,6 +4,8 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import no.skatteetaten.aurora.kubernetes.config.KubernetesClientConfig
+import no.skatteetaten.aurora.kubernetes.config.TestConfig
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener

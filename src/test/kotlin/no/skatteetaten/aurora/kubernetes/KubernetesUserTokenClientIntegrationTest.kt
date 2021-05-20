@@ -31,6 +31,7 @@ import io.fabric8.kubernetes.internal.KubernetesDeserializer
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.api.model.Route
 import kotlinx.coroutines.runBlocking
+import no.skatteetaten.aurora.kubernetes.config.kubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.EnabledIfKubernetesToken
 import no.skatteetaten.aurora.kubernetes.testutils.KUBERNETES_URL

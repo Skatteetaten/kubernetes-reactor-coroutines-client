@@ -1,8 +1,17 @@
-package no.skatteetaten.aurora.kubernetes
+package no.skatteetaten.aurora.kubernetes.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import mu.KotlinLogging
+import no.skatteetaten.aurora.kubernetes.CloseableWatcher
+import no.skatteetaten.aurora.kubernetes.KubernetesCloseableWatcher
+import no.skatteetaten.aurora.kubernetes.KubernetesConfiguration
+import no.skatteetaten.aurora.kubernetes.KubernetesCoroutinesClient
+import no.skatteetaten.aurora.kubernetes.KubernetesReactorClient
+import no.skatteetaten.aurora.kubernetes.KubernetesWatcher
+import no.skatteetaten.aurora.kubernetes.NoopTokenFetcher
+import no.skatteetaten.aurora.kubernetes.PsatTokenFetcher
+import no.skatteetaten.aurora.kubernetes.TokenFetcher
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -75,16 +84,11 @@ class KubernetesClientConfig(
 
     @Lazy
     @Bean
-    fun psatTokenFetcher() = PsatTokenFetcher()
-
-    @Lazy
-    @Bean
     @TargetClient(ClientTypes.PSAT)
     fun kubernetesClientPsat(
         builder: WebClient.Builder,
-        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
-        tokenFetcher: PsatTokenFetcher
-    ) = config.createReactorClient(builder, trustStore, tokenFetcher).apply {
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
+    ) = config.createReactorClient(builder, trustStore, PsatTokenFetcher()).apply {
         webClientBuilder.defaultHeaders(applicationName)
     }.build()
 

@@ -1,10 +1,15 @@
-package no.skatteetaten.aurora.kubernetes
+package no.skatteetaten.aurora.kubernetes.config
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import no.skatteetaten.aurora.kubernetes.HttpClientTimeoutConfiguration
+import no.skatteetaten.aurora.kubernetes.KubernetesConfiguration
+import no.skatteetaten.aurora.kubernetes.KubernetesReactorClient
+import no.skatteetaten.aurora.kubernetes.RetryConfiguration
+import no.skatteetaten.aurora.kubernetes.TokenFetcher
 import no.skatteetaten.aurora.kubernetes.testutils.DisableIfJenkins
 import no.skatteetaten.aurora.kubernetes.testutils.KUBERNETES_URL
 import org.junit.jupiter.api.Test
