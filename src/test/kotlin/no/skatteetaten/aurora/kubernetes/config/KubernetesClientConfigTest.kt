@@ -22,7 +22,7 @@ class TestConfig {
 
     @Bean
     fun kubeConfig() =
-        KubnernetesClientConfiguration(
+        KubernetesConfiguration(
             KUBERNETES_URL,
             RetryConfiguration(times = 0),
             HttpClientTimeoutConfiguration(),
@@ -37,7 +37,7 @@ class TestKubeConfig {
 
     @Bean
     fun kubeConfig() =
-        KubnernetesClientConfiguration(
+        KubernetesConfiguration(
             KUBERNETES_URL,
             RetryConfiguration(times = 0),
             HttpClientTimeoutConfiguration()

@@ -2,15 +2,10 @@ package no.skatteetaten.aurora.kubernetes
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import io.netty.channel.ChannelOption
-import io.netty.handler.ssl.SslContextBuilder
-import io.netty.handler.timeout.ReadTimeoutHandler
-import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
@@ -18,28 +13,19 @@ import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
 import reactor.netty.http.client.HttpClient
-import reactor.netty.tcp.SslProvider
-import reactor.netty.tcp.TcpClient
 import java.io.File
 import java.io.FileInputStream
-import java.lang.IllegalArgumentException
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.time.Duration
-import java.util.concurrent.TimeUnit
-import javax.net.ssl.TrustManagerFactory
 
 private val logger = KotlinLogging.logger {}
 
 enum class ClientTypes {
-    USER_TOKEN, SERVICE_ACCOUNT
+    USER_TOKEN, SERVICE_ACCOUNT, PSAT
 }
 
 @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
@@ -47,133 +33,37 @@ enum class ClientTypes {
 @Qualifier
 annotation class TargetClient(val value: ClientTypes)
 
-@Component
-@ConfigurationProperties("kubernetes")
-data class KubnernetesClientConfiguration(
-    var url: String = "https://kubernetes.default.svc.cluster.local",
-    var retry: RetryConfiguration,
-    var timeout: HttpClientTimeoutConfiguration,
-    var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-) {
-
-    fun createTestClient(token: String, userAgent: String = "test-client") =
-        createUserAccountReactorClient(
-            builder = WebClient.builder(),
-            trustStore = null,
-            tokenFetcher = StringTokenFetcher(token)
-        ).apply {
-            webClientBuilder.defaultHeaders(userAgent)
-        }.build()
-
-    fun createUserAccountReactorClient(
-        builder: WebClient.Builder,
-        trustStore: KeyStore?,
-        tokenFetcher: TokenFetcher
-    ): KubernetesReactorClient.Builder {
-        val tcpClient = tcpClient(trustStore)
-        val webClient = kubernetesWebClient(builder, tcpClient)
-        return KubernetesReactorClient.Builder(
-            webClient,
-            tokenFetcher,
-            this.retry
-        )
-    }
-
-    fun createServiceAccountReactorClient(
-        builder: WebClient.Builder,
-        trustStore: KeyStore?
-    ): KubernetesReactorClient.Builder {
-        val tcpClient = tcpClient(trustStore)
-        val webClient = kubernetesWebClient(builder, tcpClient)
-        return KubernetesReactorClient.Builder(
-            webClient,
-            StringTokenFetcher(kubernetesToken(tokenLocation)),
-            retry
-        )
-    }
-
-    fun kubernetesWebClient(
-        builder: WebClient.Builder,
-        tcpClient: TcpClient
-    ): WebClient.Builder {
-        logger.debug("Kubernetes url=${url}")
-        return builder
-            .baseUrl(url)
-            .clientConnector(ReactorClientHttpConnector(HttpClient.from(tcpClient)))
-            .exchangeStrategies(
-                ExchangeStrategies.builder()
-                    .codecs {
-                        it.defaultCodecs().apply {
-                            maxInMemorySize(-1) // unlimited
-                        }
-                    }.build()
-            )
-    }
-
-    fun tcpClient(
-        trustStore: KeyStore?
-    ): TcpClient {
-        val trustFactory = TrustManagerFactory.getInstance("X509")
-        trustFactory.init(trustStore)
-
-        val sslProvider = SslProvider.builder().sslContext(
-            SslContextBuilder
-                .forClient()
-                .trustManager(trustFactory)
-                .build()
-        ).build()
-        return TcpClient.create()
-            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
-            .secure(sslProvider)
-            .doOnConnected { connection ->
-                connection
-                    .addHandlerLast(ReadTimeoutHandler(timeout.read.toMillis(), TimeUnit.MILLISECONDS))
-                    .addHandlerLast(WriteTimeoutHandler(timeout.write.toMillis(), TimeUnit.MILLISECONDS))
-            }
-    }
-}
-
-data class HttpClientTimeoutConfiguration(
-    var connect: Duration = Duration.ofSeconds(2),
-    var read: Duration = Duration.ofSeconds(5),
-    var write: Duration = Duration.ofSeconds(5)
-)
-
-data class RetryConfiguration(
-    var times: Long = 3L,
-    var min: Duration = Duration.ofMillis(100),
-    var max: Duration = Duration.ofSeconds(1)
-)
-
 @Configuration
 class KubernetesClientConfig(
     @Value("\${spring.application.name}") val applicationName: String,
-    val config: KubnernetesClientConfiguration
+    val config: KubernetesConfiguration
 ) {
 
+    @Lazy
     @Bean
     fun kubernetesWatcher(
         websocketClient: ReactorNettyWebSocketClient,
         closeableWatcher: CloseableWatcher
     ) = KubernetesWatcher(websocketClient, closeableWatcher)
 
+    @Lazy
     @Bean
     fun kubernetesCloseableWatcher() = KubernetesCloseableWatcher()
 
-    @Lazy(true)
+    @Lazy
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     fun kubernetesCoroutineClientServiceAccount(@TargetClient(ClientTypes.SERVICE_ACCOUNT) client: KubernetesReactorClient) =
         KubernetesCoroutinesClient(client)
 
-    @Lazy(true)
+    @Lazy
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
     fun kubernetesCoroutineClientUserToken(@TargetClient(ClientTypes.USER_TOKEN) client: KubernetesReactorClient) =
         KubernetesCoroutinesClient(client)
 
-    @Lazy(true)
+    @Lazy
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
     fun kubernetesClientServiceAccount(
@@ -183,7 +73,22 @@ class KubernetesClientConfig(
         webClientBuilder.defaultHeaders(applicationName)
     }.build()
 
-    @Lazy(true)
+    @Lazy
+    @Bean
+    fun psatTokenFetcher() = PsatTokenFetcher()
+
+    @Lazy
+    @Bean
+    @TargetClient(ClientTypes.PSAT)
+    fun kubernetesClientPsat(
+        builder: WebClient.Builder,
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
+        tokenFetcher: PsatTokenFetcher
+    ) = config.createReactorClient(builder, trustStore, tokenFetcher).apply {
+        webClientBuilder.defaultHeaders(applicationName)
+    }.build()
+
+    @Lazy
     @Bean
     @Primary
     @TargetClient(ClientTypes.USER_TOKEN)
@@ -191,7 +96,7 @@ class KubernetesClientConfig(
         builder: WebClient.Builder,
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
         @Autowired(required = false) tokenFetcher: TokenFetcher?
-    ) = config.createUserAccountReactorClient(builder, trustStore, tokenFetcher ?: NoopTokenFetcher()).apply {
+    ) = config.createReactorClient(builder, trustStore, tokenFetcher ?: NoopTokenFetcher()).apply {
         webClientBuilder.defaultHeaders(applicationName)
     }.build()
 

@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test
 @EnabledIfKubernetesToken
 class KubernetesUserTokenClientIntegrationTest {
 
-    private val config = KubnernetesClientConfiguration(
+    private val config = KubernetesConfiguration(
         retry = RetryConfiguration(0),
         timeout = HttpClientTimeoutConfiguration(),
         url = KUBERNETES_URL
@@ -219,7 +219,6 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
-    @Disabled("Requires cluster admin token")
     @Test
     fun `Get token review`() {
         runBlocking {
@@ -228,10 +227,11 @@ class KubernetesUserTokenClientIntegrationTest {
                     token = kubernetesToken()
                 }
             }
-            val result = kubernetesClient.post(tokenReview, "service account token")
+            val result = kubernetesClient.post(tokenReview, kubernetesToken())
             assertThat(result).isNotNull()
             assertThat(result.hasError()).isFalse()
             assertThat(result.errorMessage()).isNull()
+            assertThat(result.isAuthenticated()).isTrue()
         }
     }
 
