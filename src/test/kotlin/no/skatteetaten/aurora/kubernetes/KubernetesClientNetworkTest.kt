@@ -10,7 +10,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newProject
 import kotlinx.coroutines.runBlocking
-import no.skatteetaten.aurora.mockmvc.extensions.mockwebserver.execute
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
@@ -38,13 +37,11 @@ class KubernetesClientNetworkTest {
 
     private val reactiveClient = config.createTestClient("test-token")
 
-    private val client = KubernetesCoroutinesClient(reactiveClient)
+    private val client = KubernetesCoroutinesClient(reactiveClient, null)
 
     @AfterEach
     fun tearDown() {
-        try {
-            server.shutdown()
-        } catch(ignored: Throwable) {}
+        runCatching { server.shutdown() }
     }
 
     @ParameterizedTest

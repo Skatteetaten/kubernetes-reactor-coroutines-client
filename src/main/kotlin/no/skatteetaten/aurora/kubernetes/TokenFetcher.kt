@@ -1,5 +1,8 @@
 package no.skatteetaten.aurora.kubernetes
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import java.io.File
 
@@ -7,7 +10,10 @@ private val logger = KotlinLogging.logger {}
 
 @FunctionalInterface
 interface TokenFetcher {
-    fun token(audience: String? = null): String?
+    fun token(audience: String? = null): String? = runBlocking { coToken(audience) }
+    suspend fun coToken(audience: String? = null): String? = withContext(Dispatchers.IO) {
+        token(audience)
+    }
 }
 
 class PsatTokenFetcher : TokenFetcher {

@@ -23,9 +23,10 @@ private val logger = KotlinLogging.logger {}
 fun <Kind : HasMetadata> WebClient.RequestBodyUriSpec.kubernetesBodyUri(
     resource: Kind,
     body: Any,
-    uriSuffix: String = ""
+    uriSuffix: String = "",
+    additionalUriVariables: Map<String, String> = emptyMap()
 ): WebClient.RequestHeadersSpec<*> =
-    this.uri(resource.uri() + uriSuffix, resource.uriVariables())
+    this.uri(resource.uri() + uriSuffix, resource.uriVariables() + additionalUriVariables)
         .body(BodyInserters.fromValue(body))
 
 fun <Kind : HasMetadata> WebClient.RequestHeadersUriSpec<*>.kubernetesListUri(

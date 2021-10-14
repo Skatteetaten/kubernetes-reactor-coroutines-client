@@ -53,7 +53,7 @@ class KubernetesUserTokenClientIntegrationTest {
 
     private val client = config.createTestClient(kubernetesToken())
 
-    private val kubernetesClient = KubernetesCoroutinesClient(client)
+    private val kubernetesClient = KubernetesCoroutinesClient(client, null)
 
     @Test
     fun `Get projects`() {
