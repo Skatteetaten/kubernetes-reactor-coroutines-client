@@ -185,6 +185,7 @@
       <groupId>no.skatteetaten.aurora</groupId>
       <artifactId>mockwebserver-extensions-kotlin</artifactId>
       <version>${mockwebserver.version}</version>
+      <classifier>plain</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fkorotkov.openshift.newDeploymentConfig
 import com.fkorotkov.openshift.newProject
 import kotlinx.coroutines.runBlocking
+import no.skatteetaten.aurora.mockmvc.extensions.mockwebserver.execute
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
