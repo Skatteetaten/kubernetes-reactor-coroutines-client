@@ -24,9 +24,14 @@
   </licenses>
 
   <distributionManagement>
+    <repository>
+      <id>releases-nexus3</id>
+      <url>https://nexus.sits.no/repository/maven-releases</url>
+    </repository>
     <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>snapshots-nexus3</id>
+      <name>Internal Snapshots</name>
+      <url>https://nexus.sits.no/repository/maven-snapshots</url>
     </snapshotRepository>
   </distributionManagement>
 
