@@ -62,10 +62,8 @@ class KubernetesClientConfig(
     @Lazy
     @Bean
     @TargetClient(ClientTypes.SERVICE_ACCOUNT)
-    fun kubernetesCoroutineClientServiceAccount(
-        @TargetClient(ClientTypes.SERVICE_ACCOUNT) client: KubernetesReactorClient,
-        @Autowired(required = false) tokenFetcher: TokenFetcher?
-    ) = KubernetesCoroutinesClient(client, tokenFetcher)
+    fun kubernetesCoroutineClientServiceAccount(@TargetClient(ClientTypes.SERVICE_ACCOUNT) client: KubernetesReactorClient) =
+        KubernetesCoroutinesClient(client, null)
 
     @Lazy
     @Bean
