@@ -48,7 +48,7 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
      * Get a single resource with a given name or namespace
      *
      * @param metadata Fetch a given resource using the namespace and name on this metadata object
-     * @return         A resource of the type Kind that is fetched reified from the variable you assign the result too
+     * @return         A resource of the type Kind that is fetched reified from the variable you assign the result to
      **/
     suspend inline fun <reified Kind : HasMetadata> getOrNull(metadata: ObjectMeta, token: String? = null, audience: String? = null): Kind? =
         client.get<Kind>(metadata, getToken(getToken(token, audience), null), null).awaitFirstOrNull()

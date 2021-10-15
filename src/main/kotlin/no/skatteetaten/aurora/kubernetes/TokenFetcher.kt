@@ -8,7 +8,10 @@ import java.io.File
 
 private val logger = KotlinLogging.logger {}
 
-@FunctionalInterface
+/**
+ * Implement either token (blocking) og coToken (reactive) function to get the token.
+ * It is important that one of these functions is overridden.
+ */
 interface TokenFetcher {
     fun token(audience: String? = null): String? = runBlocking { coToken(audience) }
     suspend fun coToken(audience: String? = null): String? = withContext(Dispatchers.IO) {
