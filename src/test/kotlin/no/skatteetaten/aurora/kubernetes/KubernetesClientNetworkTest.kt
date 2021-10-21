@@ -38,13 +38,11 @@ class KubernetesClientNetworkTest {
 
     private val reactiveClient = config.createTestClient("test-token")
 
-    private val client = KubernetesCoroutinesClient(reactiveClient)
+    private val client = KubernetesCoroutinesClient(reactiveClient, null)
 
     @AfterEach
     fun tearDown() {
-        try {
-            server.shutdown()
-        } catch(ignored: Throwable) {}
+        runCatching { server.shutdown() }
     }
 
     @ParameterizedTest

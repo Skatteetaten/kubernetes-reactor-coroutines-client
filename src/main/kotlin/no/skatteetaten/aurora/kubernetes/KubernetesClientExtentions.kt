@@ -83,7 +83,7 @@ fun String.pluralize() = if (this.endsWith("s")) {
     "${this}s"
 }
 
-fun HasMetadata.kindUri() = this.kind.toLowerCase().pluralize()
+fun HasMetadata.kindUri() = this.kind.lowercase().pluralize()
 
 fun HasMetadata.uri(): String {
     val contextRoot = if (this.apiVersion == "v1") {
