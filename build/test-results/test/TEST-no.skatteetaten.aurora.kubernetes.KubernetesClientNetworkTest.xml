@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2021-10-28T11:33:18" hostname="SKE-DM3HQ-MD6T" time="12.447">
+  <properties/>
+  <testcase name="Return empty response for 404()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.028"/>
+  <testcase name="[1] statusCode=500" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.216"/>
+  <testcase name="[2] statusCode=503" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.147"/>
+  <testcase name="[1] socketPolicy=DISCONNECT_AT_START" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.138"/>
+  <testcase name="[2] socketPolicy=DISCONNECT_AFTER_REQUEST" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.179"/>
+  <testcase name="[3] socketPolicy=NO_RESPONSE" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="5.133"/>
+  <testcase name="Return empty list for 404()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.02"/>
+  <testcase name="[1] socketPolicy=SHUTDOWN_SERVER_AFTER_RESPONSE" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="5.016"/>
+  <testcase name="[2] socketPolicy=KEEP_OPEN" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.018"/>
+  <testcase name="[3] socketPolicy=DISCONNECT_AT_END" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.021"/>
+  <testcase name="[4] socketPolicy=UPGRADE_TO_SSL_AT_END" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.021"/>
+  <testcase name="[5] socketPolicy=DISCONNECT_DURING_REQUEST_BODY" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.02"/>
+  <testcase name="[6] socketPolicy=DISCONNECT_DURING_RESPONSE_BODY" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="1.004"/>
+  <testcase name="[7] socketPolicy=FAIL_HANDSHAKE" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.015"/>
+  <testcase name="[8] socketPolicy=SHUTDOWN_INPUT_AT_END" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.015"/>
+  <testcase name="[9] socketPolicy=SHUTDOWN_OUTPUT_AT_END" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.016"/>
+  <testcase name="[10] socketPolicy=RESET_STREAM_AT_START" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.019"/>
+  <testcase name="[11] socketPolicy=EXPECT_CONTINUE" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.027"/>
+  <testcase name="[12] socketPolicy=CONTINUE_ALWAYS" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.028"/>
+  <testcase name="Throw ResourceNotFoundException when resource not found()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.031"/>
+  <testcase name="[1] statusCode=400" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.076"/>
+  <testcase name="[2] statusCode=401" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.058"/>
+  <testcase name="[3] statusCode=403" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientNetworkTest" time="0.05"/>
+  <system-out><![CDATA[2021-10-28 13:33:18.499 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54106/
+2021-10-28 13:33:18.556 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54108/
+2021-10-28 13:33:18.767 DEBUG [test,,] 78102 --- [     parallel-1] n.s.a.k.KubernetesClientExtentions       : Retrying failed request times=0, context=get DeploymentConfig/null/null errorType=InternalServerError errorMessage=500 Internal Server Error from GET http://localhost:54108/apis/apps.openshift.io/v1/deploymentconfigs, method=GET uri=http://localhost:54108/apis/apps.openshift.io/v1/deploymentconfigs
+2021-10-28 13:33:18.776 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54110/
+2021-10-28 13:33:18.920 DEBUG [test,,] 78102 --- [     parallel-2] n.s.a.k.KubernetesClientExtentions       : Retrying failed request times=0, context=get DeploymentConfig/null/null errorType=ServiceUnavailable errorMessage=503 Service Unavailable from GET http://localhost:54110/apis/apps.openshift.io/v1/deploymentconfigs, method=GET uri=http://localhost:54110/apis/apps.openshift.io/v1/deploymentconfigs
+2021-10-28 13:33:18.931 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54112/
+2021-10-28 13:33:18.952  WARN [test,,] 78102 --- [ctor-http-nio-6] r.netty.http.client.HttpClientConnect    : [bfa2af78-1, L:0.0.0.0/0.0.0.0:54113] The connection observed an error
+
+reactor.netty.http.client.PrematureCloseException: Connection prematurely closed BEFORE response
+
+2021-10-28 13:33:19.057 DEBUG [test,,] 78102 --- [     parallel-3] n.s.a.k.KubernetesClientExtentions       : Retrying failed request times=0, context=get Project/null/null errorType=WebClientRequestException errorMessage=Connection prematurely closed BEFORE response; nested exception is reactor.netty.http.client.PrematureCloseException: Connection prematurely closed BEFORE response
+2021-10-28 13:33:19.073 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54115/
+2021-10-28 13:33:19.086  WARN [test,,] 78102 --- [ctor-http-nio-8] r.netty.http.client.HttpClientConnect    : [91f37465-1, L:0.0.0.0/0.0.0.0:54116] The connection observed an error
+
+reactor.netty.http.client.PrematureCloseException: Connection prematurely closed BEFORE response
+
+2021-10-28 13:33:19.087  WARN [test,,] 78102 --- [127.0.0.1:54116] okhttp3.mockwebserver.MockWebServer      : MockWebServer[54115] connection from /127.0.0.1 didn't make a request
+2021-10-28 13:33:19.240 DEBUG [test,,] 78102 --- [     parallel-4] n.s.a.k.KubernetesClientExtentions       : Retrying failed request times=0, context=get Project/null/null errorType=WebClientRequestException errorMessage=Connection prematurely closed BEFORE response; nested exception is reactor.netty.http.client.PrematureCloseException: Connection prematurely closed BEFORE response
+2021-10-28 13:33:19.256 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54118/
+2021-10-28 13:33:24.273  WARN [test,,] 78102 --- [tor-http-nio-10] r.netty.http.client.HttpClientConnect    : [e8bb513c-1, L:/127.0.0.1:54119 - R:localhost/127.0.0.1:54118] The connection observed an error
+
+io.netty.handler.timeout.ReadTimeoutException: null
+
+2021-10-28 13:33:24.274  WARN [test,,] 78102 --- [127.0.0.1:54119] okhttp3.mockwebserver.MockWebServer      : MockWebServer[54118] connection from /127.0.0.1 didn't make a request
+2021-10-28 13:33:24.376 DEBUG [test,,] 78102 --- [     parallel-5] n.s.a.k.KubernetesClientExtentions       : Retrying failed request times=0, context=get Project/null/null errorType=WebClientRequestException errorMessage=nested exception is io.netty.handler.timeout.ReadTimeoutException
+2021-10-28 13:33:24.392 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54122/
+2021-10-28 13:33:24.416 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54124/
+2021-10-28 13:33:29.438 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54126/
+2021-10-28 13:33:29.463 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54128/
+2021-10-28 13:33:29.480  WARN [test,,] 78102 --- [127.0.0.1:54129] okhttp3.mockwebserver.MockWebServer      : MockWebServer[54128] connection from /127.0.0.1 didn't make a request
+2021-10-28 13:33:29.489 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54130/
+2021-10-28 13:33:29.518 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54132/
+2021-10-28 13:33:29.546 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54134/
+2021-10-28 13:33:30.556 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54136/
+2021-10-28 13:33:30.576 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54138/
+2021-10-28 13:33:30.596 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54140/
+2021-10-28 13:33:30.618 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54142/
+2021-10-28 13:33:30.643 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54144/
+2021-10-28 13:33:30.677 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54146/
+2021-10-28 13:33:30.712 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54148/
+2021-10-28 13:33:30.750 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54150/
+2021-10-28 13:33:30.820 DEBUG [test,,] 78102 --- [tor-http-nio-10] n.s.a.k.KubernetesReactorClient          : Error occurred for getting type=BadRequest kind=DeploymentConfig namespace=null name=null message=400 Bad Request from GET http://localhost:54150/apis/apps.openshift.io/v1/deploymentconfigs
+2021-10-28 13:33:30.832 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54152/
+2021-10-28 13:33:30.881 DEBUG [test,,] 78102 --- [tor-http-nio-11] n.s.a.k.KubernetesReactorClient          : Error occurred for getting type=Unauthorized kind=DeploymentConfig namespace=null name=null message=401 Unauthorized from GET http://localhost:54152/apis/apps.openshift.io/v1/deploymentconfigs
+2021-10-28 13:33:30.896 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=http://localhost:54154/
+2021-10-28 13:33:30.948 DEBUG [test,,] 78102 --- [tor-http-nio-12] n.s.a.k.KubernetesReactorClient          : Error occurred for getting type=Forbidden kind=DeploymentConfig namespace=null name=null message=403 Forbidden from GET http://localhost:54154/apis/apps.openshift.io/v1/deploymentconfigs
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

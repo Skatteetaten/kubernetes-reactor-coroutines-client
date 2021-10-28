@@ -127,7 +127,7 @@ class KubernetesClientConfig(
     @Qualifier("kubernetesClientWebClient")
     fun kuberntesLocalKeyStore(): KeyStore? = null
 
-    //TODO: how to fix this for testing?
+    // TODO: how to fix this for testing?
     @Bean
     @Primary
     @Profile("openshift")
@@ -157,7 +157,7 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         val path = "$userHome/.kube/config"
         logger.info("Token location ($tokenLocation) not found, reading token from $path")
         File(path).readText().let {
-            val values = ObjectMapper(YAMLFactory()).readTree(it)
+            val values = ObjectMapper(YAMLFactory.builder().build()).readTree(it)
             val users = values.at("/users").iterator().asSequence().toList()
             val name = users.first().at("/name").textValue()
             if (name == userHome.substringAfterLast("/")) {
@@ -172,4 +172,3 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         }
     }
 }
-

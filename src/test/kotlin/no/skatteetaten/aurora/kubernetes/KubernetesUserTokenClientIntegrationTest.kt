@@ -100,12 +100,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get deployment config`() {
         runBlocking {
-            val dc = kubernetesClient.get(newDeploymentConfig {
-                metadata {
-                    namespace = NAMESPACE
-                    name = NAME
+            val dc = kubernetesClient.get(
+                newDeploymentConfig {
+                    metadata {
+                        namespace = NAMESPACE
+                        name = NAME
+                    }
                 }
-            })
+            )
             assertThat(dc).isNotNull()
         }
     }
@@ -139,11 +141,13 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get services`() {
         runBlocking {
-            val services: List<Service> = kubernetesClient.getMany(newService {
-                metadata = newObjectMeta {
-                    namespace = NAMESPACE
+            val services: List<Service> = kubernetesClient.getMany(
+                newService {
+                    metadata = newObjectMeta {
+                        namespace = NAMESPACE
+                    }
                 }
-            })
+            )
             assertThat(services).isNotNull()
         }
     }
@@ -151,11 +155,13 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get pods`() {
         runBlocking {
-            val pods: List<Pod> = kubernetesClient.getMany(newPod {
-                metadata {
-                    namespace = NAMESPACE
+            val pods: List<Pod> = kubernetesClient.getMany(
+                newPod {
+                    metadata {
+                        namespace = NAMESPACE
+                    }
                 }
-            })
+            )
 
             assertThat(pods).isNotNull()
         }
@@ -172,18 +178,22 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get replication controllers`() {
         runBlocking {
-            val rcs: List<ReplicationController> = kubernetesClient.getMany(newReplicationController {
-                metadata {
-                    namespace = NAMESPACE
+            val rcs: List<ReplicationController> = kubernetesClient.getMany(
+                newReplicationController {
+                    metadata {
+                        namespace = NAMESPACE
+                    }
                 }
-            })
+            )
 
-            val rc = kubernetesClient.get(newReplicationController {
-                metadata {
-                    namespace = NAMESPACE
-                    name = rcs.first().metadata.name
+            val rc = kubernetesClient.get(
+                newReplicationController {
+                    metadata {
+                        namespace = NAMESPACE
+                        name = rcs.first().metadata.name
+                    }
                 }
-            })
+            )
 
             assertThat(rcs).isNotNull()
             assertThat(rc).isNotNull()
@@ -193,12 +203,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Get image stream tag`() {
         runBlocking {
-            val ist = kubernetesClient.get(newImageStreamTag {
-                metadata {
-                    namespace = NAMESPACE
-                    name = "$NAME:latest"
+            val ist = kubernetesClient.get(
+                newImageStreamTag {
+                    metadata {
+                        namespace = NAMESPACE
+                        name = "$NAME:latest"
+                    }
                 }
-            })
+            )
 
             assertThat(ist).isNotNull()
         }
@@ -264,12 +276,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `proxy pod`() {
         runBlocking {
-            val pod: Pod = kubernetesClient.getMany(newPod {
-                metadata {
-                    namespace = NAMESPACE
-                    labels = mapOf("app" to NAME)
+            val pod: Pod = kubernetesClient.getMany(
+                newPod {
+                    metadata {
+                        namespace = NAMESPACE
+                        labels = mapOf("app" to NAME)
+                    }
                 }
-            }).first()
+            ).first()
 
             val result: JsonNode = kubernetesClient.proxyGet(
                 pod = pod,
@@ -303,12 +317,15 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment`() {
         runBlocking {
-            val deleted = kubernetesClient.deleteForeground(newApplicationDeployment {
-                metadata {
-                    name = ""
-                    namespace = NAMESPACE_DEV
-                }
-            }, newDeleteOptions { })
+            val deleted = kubernetesClient.deleteForeground(
+                newApplicationDeployment {
+                    metadata {
+                        name = ""
+                        namespace = NAMESPACE_DEV
+                    }
+                },
+                newDeleteOptions { }
+            )
 
             assertThat(deleted).isNotNull()
         }
@@ -318,12 +335,14 @@ class KubernetesUserTokenClientIntegrationTest {
     @Test
     fun `Delete application deployment without options`() {
         runBlocking {
-            val deleted = kubernetesClient.deleteBackground(newApplicationDeployment {
-                metadata {
-                    name = ""
-                    namespace = NAMESPACE_DEV
+            val deleted = kubernetesClient.deleteBackground(
+                newApplicationDeployment {
+                    metadata {
+                        name = ""
+                        namespace = NAMESPACE_DEV
+                    }
                 }
-            })
+            )
 
             assertThat(deleted.status).isEqualTo("Success")
         }

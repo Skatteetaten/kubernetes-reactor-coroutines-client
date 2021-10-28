@@ -48,7 +48,7 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
      * Get a single resource with a given name or namespace
      *
      * @param metadata Fetch a given resource using the namespace and name on this metadata object
-     * @return         A resource of the type Kind that is fetched reified from the variable you assign the result to
+     * @return A resource of the type Kind that is fetched reified from the variable you assign the result to
      **/
     suspend inline fun <reified Kind : HasMetadata> getOrNull(metadata: ObjectMeta, token: String? = null, audience: String? = null): Kind? =
         client.get<Kind>(metadata, getToken(getToken(token, audience), null), null).awaitFirstOrNull()
@@ -65,7 +65,6 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
     suspend inline fun <reified Kind : HasMetadata> getMany(resource: Kind, token: String? = null, audience: String? = null): List<Kind> =
         client.getMany(resource, getToken(getToken(token, audience), null), audience).awaitFirstOrNull() ?: emptyList()
 
-
     suspend inline fun <reified Kind : HasMetadata> getMany(metadata: ObjectMeta? = null, token: String? = null, audience: String? = null): List<Kind> =
         client.getMany<Kind>(metadata, getToken(token, audience), null).awaitFirstOrNull() ?: emptyList()
 
@@ -76,7 +75,6 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
 
     suspend inline fun <reified Input : HasMetadata> put(resource: Input, token: String? = null, audience: String? = null): Input =
         client.put(resource = resource, token = getToken(token, audience), audience = null).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
-
 
     suspend inline fun <reified Input : HasMetadata> deleteBackground(
         resource: Input,
@@ -108,9 +106,9 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
         headers: Map<String, String> = emptyMap(),
         token: String? = null
     ): T = client.proxyGet<T>(pod = pod, port = port, path = path, headers = headers, token = getToken(token)).awaitFirstOrNull()
-            ?: throw ResourceNotFoundException(notFoundMsg<T>(pod.metadata))
+        ?: throw ResourceNotFoundException(notFoundMsg<T>(pod.metadata))
 
-    suspend inline fun scaleDeploymentConfig(namespace: String, name: String, count: Int, token: String? = null) : Scale =
+    suspend inline fun scaleDeploymentConfig(namespace: String, name: String, count: Int, token: String? = null): Scale =
         client.scaleDeploymentConfig(namespace = namespace, name = name, count = count, token = getToken(token)).awaitFirstOrNull()
             ?: throw ResourceNotFoundException(notFoundMsg<Scale>(namespace, name))
 
@@ -123,10 +121,12 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
     }
 
     inline fun <reified Kind> notFoundMsg(namespace: String, name: String) =
-        notFoundMsg<Kind>(newObjectMeta {
-            this.namespace = namespace
-            this.name = name
-        })
+        notFoundMsg<Kind>(
+            newObjectMeta {
+                this.namespace = namespace
+                this.name = name
+            }
+        )
 
     inline fun <reified Kind> notFoundMsg(metadata: ObjectMeta?) =
         "Resource with name=${metadata?.name} namespace=${metadata?.namespace} kind=${Kind::class.simpleName} was not found"

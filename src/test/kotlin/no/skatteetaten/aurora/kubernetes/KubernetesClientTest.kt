@@ -35,7 +35,6 @@ class KubernetesClientTest {
 
         assertThat(dc.uri()).isEqualTo("/apis/apps.openshift.io/v1/namespaces/{namespace}/deploymentconfigs/{name}")
         assertThat(dc.uriVariables()["name"]).isEqualTo("boober")
-
     }
 
     @Test

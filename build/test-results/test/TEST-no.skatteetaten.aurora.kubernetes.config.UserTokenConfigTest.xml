@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.skatteetaten.aurora.kubernetes.config.UserTokenConfigTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-10-28T11:33:12" hostname="SKE-DM3HQ-MD6T" time="0.411">
+  <properties/>
+  <testcase name="Spring initialization()" classname="no.skatteetaten.aurora.kubernetes.config.UserTokenConfigTest" time="0.411"/>
+  <system-out><![CDATA[2021-10-28 13:33:11.362 DEBUG [test,,] 78102 --- [    Test worker] n.s.aurora.DatabasePropertiesListener    : The environment variable DB_PROPERTIES is not set.
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v2.5.6)
+
+2021-10-28 13:33:11.371  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.UserTokenConfigTest       : Starting UserTokenConfigTest using Java 11.0.11 on SKE-DM3HQ-MD6T with PID 78102 (started by k82814 in /Users/k82814/workspace/kotlin/kubernetes-reactor-coroutines-client)
+2021-10-28 13:33:11.371 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.config.UserTokenConfigTest       : Running with Spring Boot v2.5.6, Spring v5.3.12
+2021-10-28 13:33:11.371  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.UserTokenConfigTest       : No active profile set, falling back to default profiles: default
+2021-10-28 13:33:12.244 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Reading token from: src/test/resources/test-token.txt
+2021-10-28 13:33:12.263  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.UserTokenConfigTest       : Started UserTokenConfigTest in 0.949 seconds (JVM running for 6.187)
+2021-10-28 13:33:12.287 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

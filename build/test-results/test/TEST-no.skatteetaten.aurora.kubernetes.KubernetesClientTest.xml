@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.skatteetaten.aurora.kubernetes.KubernetesClientTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2021-10-28T11:33:17" hostname="SKE-DM3HQ-MD6T" time="0.013">
+  <properties/>
+  <testcase name="Build kubernetes uri with v1 apiVersion and no namespace()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientTest" time="0.002"/>
+  <testcase name="Build kubernetes uri with apiVersion and namespace()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientTest" time="0.002"/>
+  <testcase name="Build kubernetes uri with apiVersion and namespace for ingress()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientTest" time="0.006"/>
+  <testcase name="Build Kubernetes uri without namespace and name()" classname="no.skatteetaten.aurora.kubernetes.KubernetesClientTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

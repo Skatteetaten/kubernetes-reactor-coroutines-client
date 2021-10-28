@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" tests="20" skipped="4" failures="0" errors="0" timestamp="2021-10-28T11:33:12" hostname="SKE-DM3HQ-MD6T" time="5.097">
+  <properties/>
+  <testcase name="Delete application deployment()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.003">
+    <skipped/>
+  </testcase>
+  <testcase name="Delete application deployment without options()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="Get application deployments()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="1.935"/>
+  <testcase name="Get deployment config()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.42"/>
+  <testcase name="Get routes()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.175"/>
+  <testcase name="Get pods with metadata()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.312"/>
+  <testcase name="Get token review()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.156"/>
+  <testcase name="Get projects()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.124"/>
+  <testcase name="proxy pod()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.168"/>
+  <testcase name="Self subject access review()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.083"/>
+  <testcase name="Get image stream tag()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.114"/>
+  <testcase name="Get current user null on invalid token()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.115"/>
+  <testcase name="Scale deployment config()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="Get projects with label()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.091"/>
+  <testcase name="Get replication controllers()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.722"/>
+  <testcase name="Get services()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.122"/>
+  <testcase name="Roll out deployment config()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.0">
+    <skipped/>
+  </testcase>
+  <testcase name="Get pods()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.213"/>
+  <testcase name="Get user()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.097"/>
+  <testcase name="Get current user()" classname="no.skatteetaten.aurora.kubernetes.KubernetesUserTokenClientIntegrationTest" time="0.084"/>
+  <system-out><![CDATA[2021-10-28 13:33:12.743  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:12.753 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:12.764  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:12.770 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:12.779  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:12.784 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:12.789  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:14.729  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:14.738 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:14.744  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.171  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.176 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:15.180  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.358  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.361 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:15.364  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.679  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.682 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:15.686  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.694  INFO [test,,] 78102 --- [er @coroutine#5] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.696  INFO [test,,] 78102 --- [er @coroutine#5] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.845  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.847 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:15.850  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.977  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:15.980 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:15.982  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.152  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.154 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:16.157  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.243  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.245 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:16.248  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.364  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.366 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:16.368  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.485  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.487 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:16.489  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.491 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:16.494  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.586  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:16.589 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:16.591  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.315  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.318 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:17.321  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.445  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.446 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:17.449  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.450 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:17.452  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.666  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.668 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:17.671  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.768  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.770 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
+2021-10-28 13:33:17.772  INFO [test,,] 78102 --- [    Test worker] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+2021-10-28 13:33:17.776  INFO [test,,] 78102 --- [r @coroutine#16] n.s.a.k.config.KubernetesClientConfig    : Token location () not found, reading token from /Users/k82814/.kube/config
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

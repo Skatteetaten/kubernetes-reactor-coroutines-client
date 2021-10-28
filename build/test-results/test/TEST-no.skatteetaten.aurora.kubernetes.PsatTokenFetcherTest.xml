@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.skatteetaten.aurora.kubernetes.PsatTokenFetcherTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-10-28T11:33:30" hostname="SKE-DM3HQ-MD6T" time="0.01">
+  <properties/>
+  <testcase name="Get token with audience()" classname="no.skatteetaten.aurora.kubernetes.PsatTokenFetcherTest" time="0.01"/>
+  <system-out><![CDATA[EnvironmentVariableExtension: This extension uses reflection to mutate JDK-internal state, which is fragile. Check the Javadoc or documentation for more details.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
