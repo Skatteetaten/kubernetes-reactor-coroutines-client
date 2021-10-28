@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="no.skatteetaten.aurora.kubernetes.config.KubernetesClientConfigTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-10-28T11:33:11" hostname="SKE-DM3HQ-MD6T" time="0.004">
-  <properties/>
-  <testcase name="Spring initialization()" classname="no.skatteetaten.aurora.kubernetes.config.KubernetesClientConfigTest" time="0.004"/>
-  <system-out><![CDATA[2021-10-28 13:33:11.265 DEBUG [test,,] 78102 --- [    Test worker] n.s.a.k.KubernetesConfiguration          : Kubernetes url=https://utv-master.paas.skead.no:8443
-]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

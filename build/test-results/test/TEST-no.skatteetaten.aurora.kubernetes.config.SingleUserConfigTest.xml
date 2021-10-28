@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="no.skatteetaten.aurora.kubernetes.config.SingleUserConfigTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-10-28T11:33:11" hostname="SKE-DM3HQ-MD6T" time="0.004">
-  <properties/>
-  <testcase name="Load single user config()" classname="no.skatteetaten.aurora.kubernetes.config.SingleUserConfigTest" time="0.004"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
