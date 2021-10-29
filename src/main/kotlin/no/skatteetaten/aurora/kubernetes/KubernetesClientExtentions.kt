@@ -135,32 +135,35 @@ fun <T> Mono<T>.retryWithLog(
         return this
     }
 
-    return this.retryWhen(Retry
-        .backoff(retryConfiguration.times, retryConfiguration.min)
-        .maxBackoff(retryConfiguration.max)
-        .filter {
-            logger.trace(it) {
-                "retryWhen called with exception ${it?.javaClass?.simpleName}, message: ${it?.message}"
-            }
-
-            if (ignoreAllWebClientResponseException) {
-                it !is WebClientResponseException
-            } else {
-                it.isServerError() || it !is WebClientResponseException
-            }
-        }.doAfterRetry {
-            val e = it.failure()
-            logger.debug {
-                val msg =
-                    "Retrying failed request times=${it.totalRetries()}, context=${context} errorType=${e.javaClass.simpleName} errorMessage=${e.message}"
-                if (e is WebClientResponseException) {
-                    "$msg, method=${e.request?.method} uri=${e.request?.uri}"
-                } else {
-                    msg
+    return this.retryWhen(
+        Retry
+            .backoff(retryConfiguration.times, retryConfiguration.min)
+            .maxBackoff(retryConfiguration.max)
+            .filter {
+                logger.trace(it) {
+                    "retryWhen called with exception ${it?.javaClass?.simpleName}, message: ${it?.message}"
                 }
+
+                if (ignoreAllWebClientResponseException) {
+                    it !is WebClientResponseException
+                } else {
+                    it.isServerError() || it !is WebClientResponseException
+                }
+            }.doAfterRetry {
+                logger.debug { it.logRetry(context) }
             }
-        }
     )
+}
+
+private fun Retry.RetrySignal.logRetry(context: String): String {
+    val e = failure()
+    val msg =
+        "Retrying failed request times=${totalRetries()}, context=$context errorType=${e.javaClass.simpleName} errorMessage=${e.message}"
+    return if (e is WebClientResponseException) {
+        "$msg, method=${e.request?.method} uri=${e.request?.uri}"
+    } else {
+        msg
+    }
 }
 
 private fun Throwable.isServerError() =

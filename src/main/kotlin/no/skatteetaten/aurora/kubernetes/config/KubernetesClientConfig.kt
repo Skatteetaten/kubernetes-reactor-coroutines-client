@@ -127,7 +127,7 @@ class KubernetesClientConfig(
     @Qualifier("kubernetesClientWebClient")
     fun kuberntesLocalKeyStore(): KeyStore? = null
 
-    //TODO: how to fix this for testing?
+    // TODO: how to fix this for testing?
     @Bean
     @Primary
     @Profile("openshift")
@@ -172,4 +172,3 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         }
     }
 }
-

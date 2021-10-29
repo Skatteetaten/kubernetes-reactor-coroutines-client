@@ -64,7 +64,7 @@ class KubernetesReactorClient(
         }
 
         val scale = newScale {
-            //TODO: openshift 3.11 uses this and not what is in this client as standard
+            // TODO: openshift 3.11 uses this and not what is in this client as standard
             apiVersion = "extensions/v1beta1"
             metadata {
                 this.namespace = namespace
@@ -245,8 +245,8 @@ class KubernetesReactorClient(
                 audience = audience
             )
 
-    //background=Status
-    //Foreground=Kind
+    // background=Status
+    // Foreground=Kind
     inline fun <reified Kind : HasMetadata> deleteForeground(
         resource: Kind,
         deleteOptions: DeleteOptions? = null,
@@ -315,4 +315,3 @@ class TypedHasMetadata<Kind : HasMetadata>(private val kind: KClass<Kind>, priva
         throw UnsupportedOperationException("Cannot set apiVersion on custom resource")
     }
 }
-
