@@ -1,7 +1,7 @@
 plugins {
     id("java-library")
     id("idea")
-    id("no.skatteetaten.gradle.aurora") version("4.3.20")
+    id("no.skatteetaten.gradle.aurora") version("4.3.22")
 }
 
 dependencies {
@@ -9,7 +9,7 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.5.2")
     api("com.fkorotkov:kubernetes-dsl:2.8.1")
-    api("org.springframework.boot:spring-boot-starter-webflux:2.5.5")
+    api("org.springframework.boot:spring-boot-starter-webflux:2.5.6")
     api("io.projectreactor.addons:reactor-extra:3.4.5")
     api("io.projectreactor:reactor-core:3.4.11")
     api("io.github.microutils:kotlin-logging-jvm:2.0.11")
@@ -24,6 +24,10 @@ aurora {
     useLibDefaults
     useKotlinDefaults
     useSpringBootDefaults
+
+    features {
+        auroraStarters = false
+    }
 }
 
 java {
