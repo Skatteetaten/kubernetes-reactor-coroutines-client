@@ -131,6 +131,14 @@ class KubernetesReactorClient(
             )
             .map { it.items }
 
+    inline fun <reified T : Any> proxyDelete(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String> = emptyMap(),
+        token: String? = null
+    ): Mono<T> = webClient.delete().proxyPerform(pod, port, path, headers, null, token)
+
     inline fun <reified T : Any> proxyPost(
         pod: Pod,
         port: Int,
@@ -170,11 +178,16 @@ class KubernetesReactorClient(
         body?.let {
             (spec as WebClient.RequestBodyUriSpec).body(BodyInserters.fromValue(it))
         }
-        spec.perform<T>(
-            true,
-            context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path",
-            bearerToken = token
-        )
+
+        spec.bearerToken(token ?: tokenFetcher.token())
+            .retrieve()
+            .bodyToMono<T>()
+            .logError()
+            .retryWithLog(
+                retryConfiguration = retryConfiguration,
+                ignoreAllWebClientResponseException = true,
+                context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path"
+            )
     }
 
     fun currentUser(token: String): Mono<User> {
@@ -315,6 +328,7 @@ class KubernetesReactorClient(
         this.bearerToken(bearerToken ?: tokenFetcher.token(audience))
             .retrieve()
             .bodyToMono<T>()
+            .logError()
             .notFoundAsEmpty()
             .retryWithLog(retryConfiguration, ignoreAllWebClientResponseException, context)
 }

@@ -318,6 +318,27 @@ class KubernetesUserTokenClientIntegrationTest {
         }
     }
 
+    @Disabled("add namespace and name, and update path before running test")
+    @Test
+    fun `delete proxy pod`() {
+        runBlocking {
+            val pod = newPod {
+                metadata {
+                    namespace = ""
+                    name = ""
+                }
+            }
+
+            val result = kubernetesClient.proxyDelete<Unit>(
+                pod = pod,
+                port = 8474,
+                path = "/proxies/{proxy}/toxics/{toxic}"
+            )
+
+            assertThat(result).isNull()
+        }
+    }
+
     @Disabled("add name before running test")
     @Test
     fun `Roll out deployment config`() {

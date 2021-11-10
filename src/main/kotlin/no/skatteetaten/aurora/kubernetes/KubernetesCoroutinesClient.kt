@@ -99,6 +99,14 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
     ): Input =
         client.deleteOrphan(resource = resource, deleteOptions = options, token = getToken(token)).awaitFirstOrNull() ?: throwResourceNotFoundException(resource.metadata)
 
+    suspend inline fun <reified T : Any> proxyDelete(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String> = emptyMap(),
+        token: String? = null
+    ): T? = client.proxyDelete<T>(pod = pod, port = port, path = path, headers = headers, token = getToken(token)).awaitFirstOrNull()
+
     suspend inline fun <reified T : Any> proxyPost(
         pod: Pod,
         port: Int,
@@ -106,8 +114,7 @@ class KubernetesCoroutinesClient(val client: KubernetesReactorClient, val tokenF
         headers: Map<String, String> = emptyMap(),
         body: Any,
         token: String? = null
-    ): T = client.proxyPost<T>(pod = pod, port = port, path = path, headers = headers, body = body, token = getToken(token)).awaitFirstOrNull()
-        ?: throw ResourceNotFoundException(notFoundMsg<T>(pod.metadata))
+    ): T? = client.proxyPost<T>(pod = pod, port = port, path = path, headers = headers, body = body, token = getToken(token)).awaitFirstOrNull()
 
     suspend inline fun <reified T : Any> proxyGet(
         pod: Pod,
