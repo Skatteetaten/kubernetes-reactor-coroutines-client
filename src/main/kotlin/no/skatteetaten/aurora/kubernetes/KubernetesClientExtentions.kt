@@ -106,10 +106,16 @@ fun newCurrentUser() = newUser { metadata { name = "~" } }
 fun newLabel(key: String) = mapOf(key to "")
 fun newLabel(key: String, value: String) = mapOf(key to value)
 
+fun <T> Mono<T>.logError() = this.doOnError {
+    if (it is WebClientResponseException) {
+        logger.debug { "WebClientResponseException, method=${it.request?.method} uri=${it.request?.uri} status=${it.statusCode} body=${it.responseBodyAsString}" }
+    }
+}
+
 fun <T> Mono<T>.notFoundAsEmpty() = this.onErrorResume {
     when (it) {
         is WebClientResponseException.NotFound -> {
-            logger.trace { "Resource not found, method=${it.request?.method} uri=${it.request?.uri} " }
+            logger.trace { "Resource not found, method=${it.request?.method} uri=${it.request?.uri} body=${it.responseBodyAsString}" }
             Mono.empty()
         }
         else -> Mono.error(it)

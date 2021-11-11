@@ -274,7 +274,7 @@ class KubernetesUserTokenClientIntegrationTest {
     }
 
     @Test
-    fun `proxy pod`() {
+    fun `get proxy pod`() {
         runBlocking {
             val pod: Pod = kubernetesClient.getMany(
                 newPod {
@@ -292,6 +292,50 @@ class KubernetesUserTokenClientIntegrationTest {
             )
 
             assertThat(result).isNotNull()
+        }
+    }
+
+    @Test
+    fun `post proxy pod`() {
+        runBlocking {
+            val pod: Pod = kubernetesClient.getMany(
+                newPod {
+                    metadata {
+                        namespace = NAMESPACE
+                        labels = mapOf("app" to "gobo")
+                    }
+                }
+            ).first()
+
+            val result = kubernetesClient.proxyPost<JsonNode>(
+                pod = pod,
+                port = 8080,
+                path = "graphql",
+                body = """{ "query":"{ affiliations { edges { node { name  } } } }" }"""
+            )
+
+            assertThat(result).isNotNull()
+        }
+    }
+
+    @Disabled("add namespace and name, and update path before running test")
+    @Test
+    fun `delete proxy pod`() {
+        runBlocking {
+            val pod = newPod {
+                metadata {
+                    namespace = ""
+                    name = ""
+                }
+            }
+
+            val result = kubernetesClient.proxyDelete<Unit>(
+                pod = pod,
+                port = 8474,
+                path = "/proxies/{proxy}/toxics/{toxic}"
+            )
+
+            assertThat(result).isNull()
         }
     }
 

@@ -156,7 +156,13 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         val userHome = System.getProperty("user.home")
         val path = "$userHome/.kube/config"
         logger.info("Token location ($tokenLocation) not found, reading token from $path")
-        File(path).readText().let {
+
+        val kubeConfig = File(path)
+        if (!kubeConfig.isFile) {
+            throw IllegalStateException("$path not found, run 'oc login' and then try again")
+        }
+
+        kubeConfig.readText().let {
             val values = ObjectMapper(YAMLFactory()).readTree(it)
             val users = values.at("/users").iterator().asSequence().toList()
             val name = users.first().at("/name").textValue()

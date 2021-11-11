@@ -17,6 +17,7 @@ import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.User
 import mu.KotlinLogging
 import org.springframework.http.HttpMethod
+import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
@@ -130,29 +131,64 @@ class KubernetesReactorClient(
             )
             .map { it.items }
 
+    inline fun <reified T : Any> proxyDelete(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String> = emptyMap(),
+        token: String? = null
+    ): Mono<T> = webClient.delete().proxyPerform(pod, port, path, headers, null, token)
+
+    inline fun <reified T : Any> proxyPost(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String> = emptyMap(),
+        body: Any,
+        token: String? = null
+    ): Mono<T> = webClient.post().proxyPerform(pod, port, path, headers, body, token)
+
     inline fun <reified T : Any> proxyGet(
         pod: Pod,
         port: Int,
         path: String,
         headers: Map<String, String> = emptyMap(),
         token: String? = null
-    ): Mono<T> =
-        webClient.get().kubernetesUri(
-            resource = pod,
-            uriSuffix = ":{port}/proxy{path}",
-            additionalUriVariables = mapOf(
-                "port" to port.toString(),
-                "path" to if (path.startsWith("/")) path else "/$path"
-            )
-        ).headers { h ->
-            headers.forEach {
-                h.add(it.key, it.value)
-            }
-        }.perform<T>(
-            true,
-            context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path",
-            bearerToken = token
+    ): Mono<T> = webClient.get().proxyPerform(pod, port, path, headers, null, token)
+
+    inline fun <reified T : Any> WebClient.RequestHeadersUriSpec<*>.proxyPerform(
+        pod: Pod,
+        port: Int,
+        path: String,
+        headers: Map<String, String>,
+        body: Any?,
+        token: String?
+    ): Mono<T> = this.kubernetesUri(
+        resource = pod,
+        uriSuffix = ":{port}/proxy{path}",
+        additionalUriVariables = mapOf(
+            "port" to port.toString(),
+            "path" to if (path.startsWith("/")) path else "/$path"
         )
+    ).headers { h ->
+        headers.forEach {
+            h.add(it.key, it.value)
+        }
+    }.let { spec ->
+        body?.let {
+            (spec as WebClient.RequestBodyUriSpec).body(BodyInserters.fromValue(it))
+        }
+
+        spec.bearerToken(token ?: tokenFetcher.token())
+            .retrieve()
+            .bodyToMono<T>()
+            .logError()
+            .retryWithLog(
+                retryConfiguration = retryConfiguration,
+                ignoreAllWebClientResponseException = true,
+                context = "Proxy ${pod.metadata?.namespace}/${pod.metadata?.name}:$port/$path"
+            )
+    }
 
     fun currentUser(token: String): Mono<User> {
         val resource = newCurrentUser()
@@ -292,6 +328,7 @@ class KubernetesReactorClient(
         this.bearerToken(bearerToken ?: tokenFetcher.token(audience))
             .retrieve()
             .bodyToMono<T>()
+            .logError()
             .notFoundAsEmpty()
             .retryWithLog(retryConfiguration, ignoreAllWebClientResponseException, context)
 }
