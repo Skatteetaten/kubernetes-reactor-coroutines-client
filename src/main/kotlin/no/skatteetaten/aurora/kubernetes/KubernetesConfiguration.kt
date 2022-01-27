@@ -7,12 +7,14 @@ import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
 import no.skatteetaten.aurora.kubernetes.config.defaultHeaders
 import no.skatteetaten.aurora.kubernetes.config.kubernetesToken
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
+import reactor.netty.resources.ConnectionProvider
 import reactor.netty.tcp.SslProvider
 import java.security.KeyStore
 import java.time.Duration
@@ -27,7 +29,8 @@ data class KubernetesConfiguration(
     var url: String = "https://kubernetes.default.svc.cluster.local",
     var retry: RetryConfiguration,
     var timeout: HttpClientTimeoutConfiguration,
-    var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
+    @Value("\${spring.application.name:}") val name: String? = null
 ) {
 
     fun createTestClient(token: String, userAgent: String = "test-client") =
@@ -94,7 +97,7 @@ data class KubernetesConfiguration(
                 .trustManager(trustFactory)
                 .build()
         ).build()
-        return HttpClient.create()
+        return HttpClient.create(ConnectionProvider.builder("$name-connection-provider").metrics(true).build())
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
             .secure(sslProvider)
             .doOnConnected { connection ->
