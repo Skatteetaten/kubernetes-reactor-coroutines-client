@@ -98,7 +98,9 @@ data class KubernetesConfiguration(
                 .build()
         ).build()
         return HttpClient.create(
-            ConnectionProvider.builder("$name-connection-provider").metrics(true).pendingAcquireMaxCount(1000).build()
+            ConnectionProvider
+                .builder("$name-connection-provider").metrics(true)
+                .pendingAcquireMaxCount(1500).build()
         ).option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
             .secure(sslProvider)
             .doOnConnected { connection ->
