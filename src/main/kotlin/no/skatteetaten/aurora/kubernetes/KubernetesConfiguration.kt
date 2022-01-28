@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
-import reactor.netty.resources.ConnectionProvider
 import reactor.netty.tcp.SslProvider
 import java.security.KeyStore
 import java.time.Duration
@@ -30,7 +29,8 @@ data class KubernetesConfiguration(
     var retry: RetryConfiguration,
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
-    @Value("\${spring.application.name:}") val name: String? = null
+    @Value("\${spring.application.name:}") val name: String? = null,
+    val httpClient: HttpClient? = null,
 ) {
 
     fun createTestClient(token: String, userAgent: String = "test-client") =
@@ -97,11 +97,9 @@ data class KubernetesConfiguration(
                 .trustManager(trustFactory)
                 .build()
         ).build()
-        return HttpClient.create(
-            ConnectionProvider
-                .builder("$name-connection-provider").metrics(true)
-                .pendingAcquireMaxCount(1500).build()
-        ).option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
+
+        return (httpClient ?: HttpClient.create())
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
             .secure(sslProvider)
             .doOnConnected { connection ->
                 connection

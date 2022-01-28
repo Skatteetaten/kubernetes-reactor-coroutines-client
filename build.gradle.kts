@@ -5,7 +5,6 @@ plugins {
 }
 
 dependencies {
-    api("io.micrometer:micrometer-core")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.1")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.6.0")
