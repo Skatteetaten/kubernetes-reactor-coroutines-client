@@ -7,6 +7,7 @@ import io.netty.handler.timeout.WriteTimeoutHandler
 import mu.KotlinLogging
 import no.skatteetaten.aurora.kubernetes.config.defaultHeaders
 import no.skatteetaten.aurora.kubernetes.config.kubernetesToken
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
@@ -30,7 +31,7 @@ data class KubernetesConfiguration(
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
     @Value("\${spring.application.name:}") val name: String? = null,
-    val httpClient: HttpClient? = null,
+    @Autowired(required = false) val httpClient: HttpClient? = null,
 ) {
 
     fun createTestClient(token: String, userAgent: String = "test-client") =

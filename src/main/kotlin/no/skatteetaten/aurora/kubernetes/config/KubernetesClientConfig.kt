@@ -15,7 +15,6 @@ import no.skatteetaten.aurora.kubernetes.TokenFetcher
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
@@ -142,10 +141,6 @@ class KubernetesClientConfig(
             }
             ks
         } ?: throw Exception("KeyStore getInstance did not return KeyStore")
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun kubernetesHttpClient() = HttpClient.create()
 }
 
 fun WebClient.Builder.defaultHeaders(applicationName: String) = this
