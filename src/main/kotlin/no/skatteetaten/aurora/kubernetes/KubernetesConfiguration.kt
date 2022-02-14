@@ -31,8 +31,8 @@ data class KubernetesConfiguration(
     var retry: RetryConfiguration,
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
-    @Value("\${webclient.maxLifeTime:-1}") val maxLifeTime: Long = -1,
-    @Value("\${webclient.maxIdleTime:-1}") val maxIdleTime: Long = -1,
+    @Value("\${kubernetes.webclient.maxLifeTime:-1}") val maxLifeTime: Long = -1,
+    @Value("\${kubernetes.webclient.maxIdleTime:-1}") val maxIdleTime: Long = -1,
     @Autowired(required = false) val httpClient: HttpClient? = null,
 ) {
 
