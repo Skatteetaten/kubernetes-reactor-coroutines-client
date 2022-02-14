@@ -104,9 +104,14 @@ data class KubernetesConfiguration(
         return (
             httpClient ?: HttpClient.create(
                 ConnectionProvider
-                    .builder("kubernetes-connection-provider")
-                    .maxLifeTime(Duration.ofMillis(maxLifeTime))
-                    .maxIdleTime(Duration.ofMillis(maxIdleTime))
+                    .builder("kubernetes-connection-provider").apply {
+                        if (maxLifeTime > -1) {
+                            maxLifeTime(Duration.ofMillis(maxLifeTime))
+                        }
+                        if (maxIdleTime > -1) {
+                            maxIdleTime(Duration.ofMillis(maxIdleTime))
+                        }
+                    }
                     .build()
             )
             )
