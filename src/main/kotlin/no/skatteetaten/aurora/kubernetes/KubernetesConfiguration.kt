@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
+import reactor.netty.resources.ConnectionProvider
 import reactor.netty.tcp.SslProvider
 import java.security.KeyStore
 import java.time.Duration
@@ -30,7 +31,8 @@ data class KubernetesConfiguration(
     var retry: RetryConfiguration,
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
-    @Value("\${spring.application.name:}") val name: String? = null,
+    @Value("\${webclient.maxLifeTime:-1}") val maxLifeTime: Long = -1,
+    @Value("\${webclient.maxIdleTime:-1}") val maxIdleTime: Long = -1,
     @Autowired(required = false) val httpClient: HttpClient? = null,
 ) {
 
@@ -99,7 +101,20 @@ data class KubernetesConfiguration(
                 .build()
         ).build()
 
-        return (httpClient ?: HttpClient.create())
+        return (
+            httpClient ?: HttpClient.create(
+                ConnectionProvider
+                    .builder("kubernetes-connection-provider").apply {
+                        if (maxLifeTime > -1) {
+                            maxLifeTime(Duration.ofMillis(maxLifeTime))
+                        }
+                        if (maxIdleTime > -1) {
+                            maxIdleTime(Duration.ofMillis(maxIdleTime))
+                        }
+                    }
+                    .build()
+            )
+            )
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
             .secure(sslProvider)
             .doOnConnected { connection ->
