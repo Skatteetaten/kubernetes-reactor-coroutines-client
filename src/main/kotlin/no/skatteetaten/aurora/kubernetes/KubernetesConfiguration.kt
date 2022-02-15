@@ -33,6 +33,7 @@ data class KubernetesConfiguration(
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
     @Value("\${kubernetes.webclient.maxLifeTime:-1}") val maxLifeTime: Long = -1,
     @Value("\${kubernetes.webclient.maxIdleTime:-1}") val maxIdleTime: Long = -1,
+    @Value("\${kubernetes.webclient.metrics:false}") val webclientMetrics: Boolean = false,
     @Autowired(required = false) val httpClient: HttpClient? = null,
 ) {
 
@@ -111,6 +112,7 @@ data class KubernetesConfiguration(
                         if (maxIdleTime > -1) {
                             maxIdleTime(Duration.ofMillis(maxIdleTime))
                         }
+                        metrics(webclientMetrics)
                     }
                     .build()
             )
