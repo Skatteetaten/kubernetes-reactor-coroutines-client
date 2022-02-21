@@ -1,6 +1,7 @@
 package no.skatteetaten.aurora.kubernetes
 
 import io.netty.channel.ChannelOption
+import io.netty.channel.epoll.EpollChannelOption
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.timeout.ReadTimeoutHandler
 import io.netty.handler.timeout.WriteTimeoutHandler
@@ -32,7 +33,6 @@ data class KubernetesConfiguration(
     var timeout: HttpClientTimeoutConfiguration,
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
     @Value("\${kubernetes.webclient.maxLifeTime:-1}") val maxLifeTime: Long = -1,
-    @Value("\${kubernetes.webclient.maxIdleTime:-1}") val maxIdleTime: Long = -1,
     @Value("\${kubernetes.webclient.metrics:false}") val webclientMetrics: Boolean = false,
     @Autowired(required = false) val httpClient: HttpClient? = null,
 ) {
@@ -108,14 +108,18 @@ data class KubernetesConfiguration(
                     .builder("kubernetes-connection-provider").apply {
                         if (maxLifeTime > -1) {
                             maxLifeTime(Duration.ofMillis(maxLifeTime))
-                        }
-                        if (maxIdleTime > -1) {
-                            maxIdleTime(Duration.ofMillis(maxIdleTime))
+                            maxLifeTime(Duration.ofMillis(maxLifeTime))
+                            maxIdleTime(Duration.ofMillis(maxLifeTime / 2))
+                            evictInBackground(Duration.ofMillis(maxLifeTime * 2))
+                            disposeTimeout(Duration.ofSeconds(10))
                         }
                         metrics(webclientMetrics)
                     }
                     .build()
-            )
+            ).option(ChannelOption.SO_KEEPALIVE, true)
+                .option(EpollChannelOption.TCP_KEEPIDLE, 300)
+                .option(EpollChannelOption.TCP_KEEPINTVL, 30)
+                .option(EpollChannelOption.TCP_KEEPCNT, 5)
             )
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
             .secure(sslProvider)
