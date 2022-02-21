@@ -116,11 +116,11 @@ data class KubernetesConfiguration(
                         metrics(webclientMetrics)
                     }
                     .build()
-            ).option(ChannelOption.SO_KEEPALIVE, true)
-                .option(EpollChannelOption.TCP_KEEPIDLE, 300)
-                .option(EpollChannelOption.TCP_KEEPINTVL, 30)
-                .option(EpollChannelOption.TCP_KEEPCNT, 5)
-            )
+            ))
+            .option(ChannelOption.SO_KEEPALIVE, true)
+            .option(EpollChannelOption.TCP_KEEPIDLE, 300)
+            .option(EpollChannelOption.TCP_KEEPINTVL, 30)
+            .option(EpollChannelOption.TCP_KEEPCNT, 5)
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connect.toMillis().toInt())
             .secure(sslProvider)
             .doOnConnected { connection ->
