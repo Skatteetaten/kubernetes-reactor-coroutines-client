@@ -116,7 +116,8 @@ data class KubernetesConfiguration(
                         metrics(webclientMetrics)
                     }
                     .build()
-            ))
+            )
+            )
             .option(ChannelOption.SO_KEEPALIVE, true)
             .option(EpollChannelOption.TCP_KEEPIDLE, 300)
             .option(EpollChannelOption.TCP_KEEPINTVL, 30)

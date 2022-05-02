@@ -170,6 +170,8 @@ fun kubernetesToken(tokenLocation: String = ""): String {
                 users.first().at("/user/token").textValue()
             } else {
                 val currentContext = values.at("/current-context").textValue()
+                logger.info("Current kube context: $currentContext")
+
                 val key = currentContext.substring(currentContext.indexOf("/") + 1, currentContext.lastIndexOf("/"))
                 users.find { user ->
                     user.at("/name").textValue().endsWith(key)
