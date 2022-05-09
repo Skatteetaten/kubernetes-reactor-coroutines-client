@@ -34,6 +34,7 @@ data class KubernetesConfiguration(
     var tokenLocation: String = "/var/run/secrets/kubernetes.io/serviceaccount/token",
     @Value("\${kubernetes.webclient.maxLifeTime:-1}") val maxLifeTime: Long = -1,
     @Value("\${kubernetes.webclient.metrics:false}") val webclientMetrics: Boolean = false,
+    @Value("\${kubernetes.webclient.maxConnections:16}") val maxConnections: Int = 16,
     @Autowired(required = false) val httpClient: HttpClient? = null,
 ) {
 
@@ -113,6 +114,7 @@ data class KubernetesConfiguration(
                             evictInBackground(Duration.ofMillis(maxLifeTime * 2))
                             disposeTimeout(Duration.ofSeconds(10))
                         }
+                        maxConnections(maxConnections)
                         metrics(webclientMetrics)
                     }
                     .build()
