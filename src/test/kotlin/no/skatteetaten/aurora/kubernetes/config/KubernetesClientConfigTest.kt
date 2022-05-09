@@ -122,19 +122,3 @@ class MultipleUsersConfigTest {
         assertThat(token).isEqualTo("test-token")
     }
 }
-
-@DisableIfJenkins
-@SetSystemProperty(key = "user.home", value = "src/test/resources/test-config/combined")
-@SpringBootTest(classes = [TestKubeConfig::class, KubernetesClientConfig::class])
-class CombinedUsersConfigTest {
-
-    @TargetClient(ClientTypes.SERVICE_ACCOUNT)
-    @Autowired
-    private lateinit var client: KubernetesReactorClient
-
-    @Test
-    fun `Load single user config`() {
-        val token = client.tokenFetcher.token()
-        assertThat(token).isEqualTo("test-token")
-    }
-}
