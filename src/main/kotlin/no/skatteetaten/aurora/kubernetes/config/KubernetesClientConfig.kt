@@ -165,18 +165,13 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         kubeConfig.readText().let {
             val values = ObjectMapper(YAMLFactory()).readTree(it)
             val users = values.at("/users").iterator().asSequence().toList()
-            val name = users.first().at("/name").textValue()
-            if (name == userHome.substringAfterLast("/")) {
-                users.first().at("/user/token").textValue()
-            } else {
-                val currentContext = values.at("/current-context").textValue()
-                logger.info("Current kube context: $currentContext")
+            val currentContext = values.at("/current-context").textValue()
+            logger.info("Current kube context: $currentContext")
 
-                val key = currentContext.substring(currentContext.indexOf("/") + 1, currentContext.lastIndexOf("/"))
-                users.find { user ->
-                    user.at("/name").textValue().endsWith(key)
-                }?.at("/user/token")?.textValue() ?: throw IllegalArgumentException("Could not find token in $path")
-            }
+            val key = currentContext.substring(currentContext.indexOf("/") + 1, currentContext.lastIndexOf("/"))
+            users.find { user ->
+                user.at("/name").textValue().endsWith(key)
+            }?.at("/user/token")?.textValue() ?: throw IllegalArgumentException("Could not find token in $path")
         }
     }
 }
