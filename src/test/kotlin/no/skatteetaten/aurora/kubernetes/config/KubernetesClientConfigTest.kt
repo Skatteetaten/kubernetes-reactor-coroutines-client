@@ -1,5 +1,6 @@
 package no.skatteetaten.aurora.kubernetes.config
 
+import java.beans.Beans.isInstanceOf
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
@@ -19,6 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.web.reactive.function.client.WebClient
+import assertk.assertions.isFailure
+import assertk.assertions.isInstanceOf
 
 @TestConfiguration
 class TestConfig {
@@ -120,5 +123,33 @@ class MultipleUsersConfigTest {
     fun `Load single user config`() {
         val token = client.tokenFetcher.token()
         assertThat(token).isEqualTo("test-token")
+    }
+}
+
+@DisableIfJenkins
+@SetSystemProperty(key = "user.home", value = "src/test/resources/test-config/userWithoutCluster")
+@SpringBootTest(classes = [TestKubeConfig::class, KubernetesClientConfig::class])
+class SingleUserWithoutClusterConfigTest {
+
+    @TargetClient(ClientTypes.SERVICE_ACCOUNT)
+    @Autowired
+    private lateinit var client: KubernetesReactorClient
+
+    @Test
+    fun `Load single user config without cluster in name`() {
+        val token = client.tokenFetcher.token()
+        assertThat(token).isEqualTo("test-token")
+    }
+}
+
+@DisableIfJenkins
+@SetSystemProperty(key = "user.home", value = "src/test/resources/test-config/tokenNotFound")
+class TokenNotFoundConfigTest {
+
+    @Test
+    fun `Load user config with no token given`() {
+        assertThat {
+            val token = kubernetesToken()
+        }.isFailure().isInstanceOf(IllegalArgumentException::class)
     }
 }

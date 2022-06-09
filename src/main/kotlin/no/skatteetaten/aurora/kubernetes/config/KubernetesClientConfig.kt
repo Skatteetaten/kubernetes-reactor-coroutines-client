@@ -1,5 +1,6 @@
 package no.skatteetaten.aurora.kubernetes.config
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import mu.KotlinLogging
@@ -154,6 +155,7 @@ fun kubernetesToken(tokenLocation: String = ""): String {
         tokenFile.readText().trim()
     } else {
         val userHome = System.getProperty("user.home")
+        val username = userHome.substringAfterLast("/")
         val path = "$userHome/.kube/config"
         logger.info("Token location ($tokenLocation) not found, reading token from $path")
 
@@ -169,9 +171,17 @@ fun kubernetesToken(tokenLocation: String = ""): String {
             logger.info("Current kube context: $currentContext")
 
             val key = currentContext.substring(currentContext.indexOf("/") + 1, currentContext.lastIndexOf("/"))
-            users.find { user ->
-                user.at("/name").textValue().endsWith(key)
-            }?.at("/user/token")?.textValue() ?: throw IllegalArgumentException("Could not find token in $path")
+            return users.getCurrentContextUser(key)
+                ?: users.getUser(username)
+                ?: throw IllegalArgumentException("Could not find token for $currentContext in $path")
         }
     }
 }
+
+private fun List<JsonNode>.getCurrentContextUser(key: String) =
+    find { it.at("/name").textValue().endsWith(key) }
+        ?.at("/user/token")?.textValue()
+
+private fun List<JsonNode>.getUser(username: String) =
+    find { it.at("/name").textValue() == username }
+        ?.at("/user/token")?.textValue()
