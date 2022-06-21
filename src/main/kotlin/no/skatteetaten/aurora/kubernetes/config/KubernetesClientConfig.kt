@@ -114,8 +114,8 @@ class KubernetesClientConfig(
             HttpClient.create()
                 .baseUrl(config.url)
                 .headers { headers ->
-                    File(kubernetesToken(config.tokenLocation)).takeIf { it.isFile }?.let {
-                        headers.add(HttpHeaders.AUTHORIZATION, "Bearer ${it.readText()}")
+                    kubernetesToken(config.tokenLocation)?.let { token ->
+                        headers.add(HttpHeaders.AUTHORIZATION, "Bearer $token")
                     }
 
                     headers.add("User-Agent", applicationName)
