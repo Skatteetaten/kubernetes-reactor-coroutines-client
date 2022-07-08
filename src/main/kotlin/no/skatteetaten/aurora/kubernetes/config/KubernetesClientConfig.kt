@@ -3,6 +3,7 @@ package no.skatteetaten.aurora.kubernetes.config
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import io.netty.handler.ssl.SslContextBuilder
 import mu.KotlinLogging
 import no.skatteetaten.aurora.kubernetes.CloseableWatcher
 import no.skatteetaten.aurora.kubernetes.KubernetesCloseableWatcher
@@ -26,11 +27,13 @@ import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
 import reactor.netty.http.client.HttpClient
+import reactor.netty.tcp.SslProvider
 import java.io.File
 import java.io.FileInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import javax.net.ssl.TrustManagerFactory
 
 private val logger = KotlinLogging.logger {}
 
@@ -109,7 +112,19 @@ class KubernetesClientConfig(
 
     @Bean
     @Qualifier("kubernetesClientWebClient")
-    fun kubernetesWebsocketClient(): ReactorNettyWebSocketClient {
+    fun kubernetesWebsocketClient(
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
+    ): ReactorNettyWebSocketClient {
+        val trustFactory = TrustManagerFactory.getInstance("X509")
+        trustFactory.init(trustStore)
+
+        val sslProvider = SslProvider.builder().sslContext(
+            SslContextBuilder
+                .forClient()
+                .trustManager(trustFactory)
+                .build()
+        ).build()
+
         return ReactorNettyWebSocketClient(
             HttpClient.create()
                 .baseUrl(config.url)
@@ -120,6 +135,7 @@ class KubernetesClientConfig(
 
                     headers.add("User-Agent", applicationName)
                 }
+                .secure(sslProvider)
         )
     }
 
