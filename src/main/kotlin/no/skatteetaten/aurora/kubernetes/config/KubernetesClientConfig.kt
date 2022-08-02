@@ -115,7 +115,7 @@ class KubernetesClientConfig(
     fun kubernetesWebsocketClient(
         @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
     ): ReactorNettyWebSocketClient {
-        logger.debug("Kubernetes url=$config.url")
+        logger.debug("Kubernetes url=${config.url}")
         val trustFactory = TrustManagerFactory.getInstance("X509")
         trustFactory.init(trustStore)
 
