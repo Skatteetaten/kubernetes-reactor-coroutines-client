@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.web.reactive.function.client.WebClient
 import assertk.assertions.isFailure
 import assertk.assertions.isInstanceOf
+import org.junitpioneer.jupiter.SetEnvironmentVariable
 
 @TestConfiguration
 class TestConfig {
@@ -91,6 +92,20 @@ class UserTokenConfigTest {
 
         assertThat(client).isNotNull()
         assertThat(client.tokenFetcher.token()).isEqualTo("123abc")
+    }
+}
+
+@SetEnvironmentVariable(key = "VOLUME_PSAT_TOKEN_MOUNT", value = "src/test/resources")
+@SpringBootTest(classes = [TestConfig::class, KubernetesClientConfig::class])
+class PsatConfigTest {
+    @TargetClient(ClientTypes.PSAT)
+    @Autowired
+    private lateinit var client: KubernetesReactorClient
+
+    @Test
+    fun `Spring initialization`() {
+        assertThat(client).isNotNull()
+        assertThat(client.tokenFetcher.token("test-token.txt")).isEqualTo("abc123")
     }
 }
 
