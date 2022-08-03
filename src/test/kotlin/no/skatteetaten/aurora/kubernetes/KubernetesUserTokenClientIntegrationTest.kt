@@ -40,6 +40,9 @@ import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE
 import no.skatteetaten.aurora.kubernetes.testutils.NAMESPACE_DEV
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
+import java.nio.file.Path
 
 @DisableIfJenkins
 @EnabledIfKubernetesToken
@@ -241,6 +244,26 @@ class KubernetesUserTokenClientIntegrationTest {
                 }
             }
             val result = kubernetesClient.post(tokenReview, kubernetesToken())
+            assertThat(result).isNotNull()
+            assertThat(result.hasError()).isFalse()
+            assertThat(result.errorMessage()).isNull()
+            assertThat(result.isAuthenticated()).isTrue()
+        }
+    }
+
+    @Test
+    fun `Get token review with PSAT`(@TempDir tempDir: Path) {
+        val path = tempDir.resolve("psat-token.txt")
+        Files.write(path, kubernetesToken().toByteArray())
+        val client = KubernetesCoroutinesClient(client, PsatTokenFetcher(path.toString()))
+
+        runBlocking {
+            val tokenReview = newTokenReview {
+                spec {
+                    token = kubernetesToken()
+                }
+            }
+            val result = client.post(tokenReview, kubernetesToken())
             assertThat(result).isNotNull()
             assertThat(result.hasError()).isFalse()
             assertThat(result.errorMessage()).isNull()

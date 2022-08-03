@@ -90,8 +90,9 @@ class KubernetesClientConfig(
     @TargetClient(ClientTypes.PSAT)
     fun kubernetesClientPsat(
         builder: WebClient.Builder,
-        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?
-    ) = config.createReactorClient(builder, trustStore, PsatTokenFetcher()).apply {
+        @Qualifier("kubernetesClientWebClient") trustStore: KeyStore?,
+        @Value("\${volume.psat.token.mount:}") psatTokenMount: String?
+    ) = config.createReactorClient(builder, trustStore, PsatTokenFetcher(psatTokenMount ?: "/u01/secrets/app/psat-token")).apply {
         webClientBuilder.defaultHeaders(applicationName)
     }.build()
 
