@@ -253,8 +253,9 @@ class KubernetesUserTokenClientIntegrationTest {
 
     @Test
     fun `Get token review with PSAT`(@TempDir tempDir: Path) {
-        val path = tempDir.resolve("psat-token.txt")
-        Files.write(path, kubernetesToken().toByteArray())
+        val path = tempDir.resolve("psat-token.txt").apply {
+            Files.write(this, kubernetesToken().toByteArray())
+        }
         val client = KubernetesCoroutinesClient(client, PsatTokenFetcher(path.toString()))
 
         runBlocking {
