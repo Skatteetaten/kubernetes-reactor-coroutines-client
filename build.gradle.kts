@@ -31,9 +31,6 @@ aurora {
 java {
     withSourcesJar()
 }
-repositories {
-    mavenCentral()
-}
 
 tasks.compileJava {
     options.release.set(8)
