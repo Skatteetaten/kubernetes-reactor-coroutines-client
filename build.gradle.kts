@@ -13,7 +13,7 @@ dependencies {
     api("io.github.microutils:kotlin-logging-jvm:3.0.3")
 
     testImplementation("org.junit-pioneer:junit-pioneer:1.6.2")
-    testImplementation("no.skatteetaten.aurora:mockwebserver-extensions-kotlin:1.3.1")
+    testImplementation("no.skatteetaten.aurora:mockwebserver-extensions-kotlin:1.4.0")
     testImplementation("io.mockk:mockk:1.13.2")
     testImplementation("com.ninja-squad:springmockk:3.1.1")
 }
@@ -26,12 +26,12 @@ aurora {
     features {
         auroraStarters = false
     }
+
+    versions {
+        javaSourceCompatibility = "1.8"
+    }
 }
 
 java {
     withSourcesJar()
-}
-
-tasks.compileJava {
-    options.release.set(8)
 }
