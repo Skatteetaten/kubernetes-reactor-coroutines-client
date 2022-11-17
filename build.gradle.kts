@@ -5,7 +5,6 @@ plugins {
 }
 
 dependencies {
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.6.4")
     api("com.fkorotkov:kubernetes-dsl:2.8.1")
