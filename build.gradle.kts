@@ -1,16 +1,15 @@
 plugins {
     id("java-library")
     id("idea")
-    id("no.skatteetaten.gradle.aurora") version("4.5.9")
+    id("no.skatteetaten.gradle.aurora") version("4.5.11")
 }
 
 dependencies {
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.4")
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.6.4")
     api("com.fkorotkov:kubernetes-dsl:2.8.1")
     api("org.springframework.boot:spring-boot-starter-webflux")
-    api("io.github.microutils:kotlin-logging-jvm:3.0.3")
 
     testImplementation("org.junit-pioneer:junit-pioneer:1.6.2")
     testImplementation("no.skatteetaten.aurora:mockwebserver-extensions-kotlin:1.4.0")

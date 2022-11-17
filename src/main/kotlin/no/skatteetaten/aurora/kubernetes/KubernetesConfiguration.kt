@@ -78,6 +78,7 @@ data class KubernetesConfiguration(
     ): WebClient.Builder {
         logger.debug("Kubernetes url=$url")
         return builder
+            .clone()
             .baseUrl(url)
             .clientConnector(ReactorClientHttpConnector(httpClient))
             .exchangeStrategies(
